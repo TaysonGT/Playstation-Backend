@@ -36,7 +36,7 @@ app.use(function (req, res, next) {
     next();
 });
 // Routes
-app.get('/', user_auth_1.auth);
+app.get('/auth', user_auth_1.auth);
 app.post('/login', users_controller_1.userLogin);
 app.get('/logout', users_controller_1.userLogout);
 app.use('/user', users_router_1.default);
