@@ -42,7 +42,7 @@ const userLogin = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, functi
     if (user) {
         if (user.password == password) {
             const token = jsonwebtoken_1.default.sign({ username }, "tayson", { expiresIn: '8h' });
-            return res.json({ messsage: "Signed in Successfully", success: true, token, expDate: Date.now() + 8 * 60 * 60 * 1000 });
+            return res.json({ messsage: "Signed in Successfully", success: true, token, username, expDate: Date.now() + 8 * 60 * 60 * 1000 });
         }
         else {
             return res.json({ message: "Invalid Password", success: false });

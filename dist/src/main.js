@@ -24,14 +24,14 @@ app.use((0, cookie_parser_1.default)());
 app.use(body_parser_1.default.json());
 app.use((0, cors_1.default)({
     credentials: true,
-    origin: ["http://localhost:3000"],
+    origin: ["https://playstation-frontend-jrjdaalk9-taysons-projects.vercel.app"],
     methods: ["POST", "GET"]
 }));
 app.use(express_1.default.urlencoded({
     extended: true
 }));
 app.use(function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000"); // "*"
+    res.header("Access-Control-Allow-Origin", "https://playstation-frontend-jrjdaalk9-taysons-projects.vercel.app"); // "*"
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
