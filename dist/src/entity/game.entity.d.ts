@@ -1,4 +1,4 @@
 export declare class Game {
-    id: number;
+    id: string;
     name: string;
 }

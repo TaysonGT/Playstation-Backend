@@ -22,6 +22,10 @@ tslib_1.__decorate([
     (0, typeorm_1.Column)(),
     tslib_1.__metadata("design:type", Number)
 ], Product.prototype, "stock", void 0);
+tslib_1.__decorate([
+    (0, typeorm_1.Column)(),
+    tslib_1.__metadata("design:type", Number)
+], Product.prototype, "consumed", void 0);
 exports.Product = Product = tslib_1.__decorate([
     (0, typeorm_1.Entity)('products')
 ], Product);

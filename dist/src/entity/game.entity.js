@@ -7,8 +7,8 @@ let Game = class Game {
 };
 exports.Game = Game;
 tslib_1.__decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)(),
-    tslib_1.__metadata("design:type", Number)
+    (0, typeorm_1.PrimaryGeneratedColumn)('uuid'),
+    tslib_1.__metadata("design:type", String)
 ], Game.prototype, "id", void 0);
 tslib_1.__decorate([
     (0, typeorm_1.Column)(),

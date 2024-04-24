@@ -1,8 +1,6 @@
-import { Game } from "./game.entity";
 export declare class Device {
-    id: number;
+    id: string;
     name: string;
     type: string;
     status: boolean;
-    games: Game[];
 }

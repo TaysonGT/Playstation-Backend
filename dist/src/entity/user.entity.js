@@ -18,6 +18,10 @@ tslib_1.__decorate([
     (0, typeorm_1.Column)(),
     tslib_1.__metadata("design:type", String)
 ], User.prototype, "password", void 0);
+tslib_1.__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    tslib_1.__metadata("design:type", Boolean)
+], User.prototype, "admin", void 0);
 exports.User = User = tslib_1.__decorate([
     (0, typeorm_1.Entity)('users')
 ], User);

@@ -15,13 +15,17 @@ tslib_1.__decorate([
     tslib_1.__metadata("design:type", Number)
 ], Finance.prototype, "finances", void 0);
 tslib_1.__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)(),
     tslib_1.__metadata("design:type", String)
-], Finance.prototype, "time_order_id", void 0);
+], Finance.prototype, "type", void 0);
 tslib_1.__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)(),
     tslib_1.__metadata("design:type", String)
-], Finance.prototype, "order_id", void 0);
+], Finance.prototype, "description", void 0);
+tslib_1.__decorate([
+    (0, typeorm_1.Column)(),
+    tslib_1.__metadata("design:type", String)
+], Finance.prototype, "username", void 0);
 tslib_1.__decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'added_at' }),
     tslib_1.__metadata("design:type", String)

@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const tslib_1 = require("tslib");
+const session_controller_1 = require("../controllers/session.controller");
+const express_1 = tslib_1.__importDefault(require("express"));
+const sessionRouter = express_1.default.Router();
+sessionRouter.get('/', session_controller_1.allSessions);
+sessionRouter.put('/:id', session_controller_1.changeTime);
+sessionRouter.post('/:id', session_controller_1.addSession);
+sessionRouter.get('/:id', session_controller_1.findSession);
+sessionRouter.delete('/:id', session_controller_1.endSession);
+exports.default = sessionRouter;
+//# sourceMappingURL=device-session.router.js.map

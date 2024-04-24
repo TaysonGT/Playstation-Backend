@@ -3,4 +3,5 @@ export declare class Product {
     name: string;
     price: number;
     stock: number;
+    consumed: number;
 }

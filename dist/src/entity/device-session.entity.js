@@ -16,19 +16,19 @@ tslib_1.__decorate([
     tslib_1.__metadata("design:type", String)
 ], DeviceSession.prototype, "device_id", void 0);
 tslib_1.__decorate([
-    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
+    (0, typeorm_1.CreateDateColumn)({ default: Date.now() }),
     tslib_1.__metadata("design:type", String)
-], DeviceSession.prototype, "createdAt", void 0);
+], DeviceSession.prototype, "start_at", void 0);
 tslib_1.__decorate([
-    (0, typeorm_1.DeleteDateColumn)({ name: "end_at" }),
+    (0, typeorm_1.Column)({ name: "end_at", nullable: true }),
     tslib_1.__metadata("design:type", String)
 ], DeviceSession.prototype, "end_at", void 0);
 tslib_1.__decorate([
-    (0, typeorm_1.Column)('text', { default: "open" }),
+    (0, typeorm_1.Column)('text'),
     tslib_1.__metadata("design:type", String)
 ], DeviceSession.prototype, "time_type", void 0);
 tslib_1.__decorate([
-    (0, typeorm_1.Column)('text', { default: "single" }),
+    (0, typeorm_1.Column)('text'),
     tslib_1.__metadata("design:type", String)
 ], DeviceSession.prototype, "play_type", void 0);
 tslib_1.__decorate([
