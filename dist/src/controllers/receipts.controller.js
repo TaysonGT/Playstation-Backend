@@ -21,7 +21,7 @@ const createOuterReceipt = (req, res) => tslib_1.__awaiter(void 0, void 0, void 
     if (orderData.length > 0) {
         let cost = 0;
         let ordersCount = 0;
-        const cashier = req.cookies.username;
+        const cashier = "Test Name";
         for (const item of orderData) {
             const product = yield productRepo.findOne({ where: { id: item.id } });
             if (product) {
