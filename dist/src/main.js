@@ -5,10 +5,10 @@ const express_1 = tslib_1.__importDefault(require("express"));
 const app_data_source_1 = require("./app-data-source");
 const cors_1 = tslib_1.__importDefault(require("cors"));
 const users_controller_1 = require("./controllers/users.controller");
-const user_auth_1 = require("./middleware/user.auth");
+// import { addAuth, auth, isSigned, } from './middleware/user.auth';
 const devices_router_1 = tslib_1.__importDefault(require("./routes/devices.router"));
 const orders_router_1 = tslib_1.__importDefault(require("./routes/orders.router"));
-const cookie_parser_1 = tslib_1.__importDefault(require("cookie-parser"));
+// import cookieParser from 'cookie-parser';
 const body_parser_1 = tslib_1.__importDefault(require("body-parser"));
 const session_router_1 = tslib_1.__importDefault(require("./routes/session.router"));
 const games_router_1 = tslib_1.__importDefault(require("./routes/games.router"));
@@ -22,7 +22,7 @@ const app = (0, express_1.default)();
 //Database Initializer
 // Middlewares 
 app.use(express_1.default.json());
-app.use((0, cookie_parser_1.default)());
+// app.use(cookieParser())
 app.use(body_parser_1.default.json());
 app.use((0, cors_1.default)({
     credentials: true,
@@ -37,17 +37,17 @@ app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
-app.use((req, res, next) => {
-    if (req.cookies && req.cookies.cookieName) {
-        res.cookie('cookieName', req.cookies.cookieName, { sameSite: 'strict' });
-    }
-    next();
-});
+// app.use((req, res, next) => {
+//     if (req.cookies && req.cookies.cookieName) {
+//       res.cookie('cookieName', req.cookies.cookieName, { sameSite: 'strict' });
+//     }
+//     next();
+//   });
 // Routes
-app.post('/login', user_auth_1.isSigned, users_controller_1.userLogin);
-app.post('/firstuser', user_auth_1.addAuth, users_controller_1.addUser);
+app.post('/login', users_controller_1.userLogin);
+app.post('/firstuser', users_controller_1.addUser);
 app.get('/firstuser', users_controller_1.allUsers);
-app.use(user_auth_1.auth);
+// app.use(auth)
 app.use('/orders', orders_router_1.default);
 app.use('/devices', devices_router_1.default);
 app.use('/sessions', session_router_1.default);
