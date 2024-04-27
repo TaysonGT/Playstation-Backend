@@ -32,14 +32,18 @@ exports.allDevices = allDevices;
 const addDevice = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     const { name, type } = req.body;
     const checkExists = yield deviceRepo.findOne({ where: { name } });
-    if (!checkExists) {
-        const device_type = yield devTypeRepo.findOne({ where: { id: type } });
-        const deviceData = deviceRepo.create({ name, type: device_type === null || device_type === void 0 ? void 0 : device_type.id, status: false });
-        const device = yield deviceRepo.save(deviceData);
-        res.json({ device, message: "تمت إضافة جهاز بنجاح", success: true });
+    if (name && type) {
+        if (!checkExists) {
+            const device_type = yield devTypeRepo.findOne({ where: { id: type } });
+            const deviceData = deviceRepo.create({ name, type: device_type === null || device_type === void 0 ? void 0 : device_type.id, status: false });
+            const device = yield deviceRepo.save(deviceData);
+            res.json({ device, message: "تمت إضافة جهاز بنجاح", success: true });
+        }
+        else
+            res.json({ success: false, message: "هذا الجهاز موجود بالفعل" });
     }
     else
-        res.json({ success: false, message: "هذا الجهاز موجود بالفعل" });
+        res.json({ message: "برجاء ادخال كل البيانات", success: false });
 });
 exports.addDevice = addDevice;
 const updateDevice = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
