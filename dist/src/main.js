@@ -37,6 +37,12 @@ app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
+app.use((req, res, next) => {
+    if (req.cookies && req.cookies.cookieName) {
+        res.cookie('cookieName', req.cookies.cookieName, { sameSite: 'strict' });
+    }
+    next();
+});
 // Routes
 app.post('/login', user_auth_1.isSigned, users_controller_1.userLogin);
 app.post('/firstuser', user_auth_1.addAuth, users_controller_1.addUser);
