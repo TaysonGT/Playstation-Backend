@@ -26,7 +26,7 @@ app.use(express_1.default.json());
 app.use(body_parser_1.default.json());
 app.use((0, cors_1.default)({
     credentials: true,
-    origin: ["http://localhost:3000"],
+    origin: ["https://playstation-frontend.vercel.app"],
     methods: ["POST", "GET", "DELETE", "PUT"]
 }));
 app.use(express_1.default.urlencoded({
