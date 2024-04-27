@@ -35,9 +35,13 @@ const addDevice = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, functi
     if (name && type) {
         if (!checkExists) {
             const device_type = yield devTypeRepo.findOne({ where: { id: type } });
-            const deviceData = deviceRepo.create({ name, type: device_type === null || device_type === void 0 ? void 0 : device_type.id, status: false });
-            const device = yield deviceRepo.save(deviceData);
-            res.json({ device, message: "تمت إضافة جهاز بنجاح", success: true });
+            if (device_type) {
+                const deviceData = deviceRepo.create({ name, type: device_type.id, status: false });
+                const device = yield deviceRepo.save(deviceData);
+                res.json({ device, message: "تمت إضافة جهاز بنجاح", success: true });
+            }
+            else
+                res.json({ message: "برجاء اعادة ادخال البيانات", success: false });
         }
         else
             res.json({ success: false, message: "هذا الجهاز موجود بالفعل" });
