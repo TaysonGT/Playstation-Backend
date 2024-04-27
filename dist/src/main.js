@@ -8,8 +8,7 @@ const users_controller_1 = require("./controllers/users.controller");
 // import { addAuth, auth, isSigned, } from './middleware/user.auth';
 const devices_router_1 = tslib_1.__importDefault(require("./routes/devices.router"));
 const orders_router_1 = tslib_1.__importDefault(require("./routes/orders.router"));
-// import { NextFunction, Request, Response } from 'express';
-// import cookieParser from 'cookie-parser';
+const cookie_parser_1 = tslib_1.__importDefault(require("cookie-parser"));
 const body_parser_1 = tslib_1.__importDefault(require("body-parser"));
 const session_router_1 = tslib_1.__importDefault(require("./routes/session.router"));
 const games_router_1 = tslib_1.__importDefault(require("./routes/games.router"));
@@ -21,9 +20,15 @@ const receipts_router_1 = tslib_1.__importDefault(require("./routes/receipts.rou
 // Initializing App
 const app = (0, express_1.default)();
 //Database Initializer
+app.get('/', function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    res.header("Access-Control-Allow-methods", 'GET, POST, PUT, DELETE');
+    next();
+});
 // Middlewares 
 app.use(express_1.default.json());
-// app.use(cookieParser())
+app.use((0, cookie_parser_1.default)());
 app.use(body_parser_1.default.json());
 app.use((0, cors_1.default)({
     credentials: true,
@@ -33,13 +38,6 @@ app.use((0, cors_1.default)({
 app.use(express_1.default.urlencoded({
     extended: true
 }));
-// app.use(
-//     function (req: Request, res: Response, next: NextFunction) {
-//         res.header("Access-Control-Allow-Origin", "https://playstation-frontend.vercel.app"); // "*"
-//         res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-//         next();
-//     }
-// )
 // app.use((req, res, next) => {
 //     if (req.cookies && req.cookies.cookieName) {
 //       res.cookie('cookieName', req.cookies.cookieName, { sameSite: 'strict' });
