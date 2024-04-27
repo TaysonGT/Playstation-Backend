@@ -31,6 +31,6 @@ tslib_1.__decorate([
     tslib_1.__metadata("design:type", String)
 ], Finance.prototype, "added_at", void 0);
 exports.Finance = Finance = tslib_1.__decorate([
-    (0, typeorm_1.Entity)()
+    (0, typeorm_1.Entity)('finances')
 ], Finance);
 //# sourceMappingURL=finances.entity.js.map

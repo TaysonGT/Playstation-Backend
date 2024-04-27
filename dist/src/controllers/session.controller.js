@@ -97,21 +97,27 @@ const endSession = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, funct
             const updatedDevice = yield deviceRepo.save(deviceData);
             let timeDiff = null;
             // SENDING FINAL TIME ORDER BEFORE CALCULATING ALL TIME ORDERS
-            session.time_type == "open" ? timeDiff = Date.now() - new Date(session.start_at).getTime() / (1000 * 60 * 5)
-                : timeDiff = new Date(session.end_at).getTime() - new Date(session.start_at).getTime() / (1000 * 60 * 5);
+            if (session.time_type == "open") {
+                timeDiff = (new Date().getTime() - new Date(session.start_at).getTime()) / (1000 * 60 * 60);
+            }
+            else {
+                new Date(session.end_at).getTime() > Date.now() ?
+                    timeDiff = (Date.now() - new Date(session.start_at).getTime()) / (1000 * 60 * 60)
+                    : timeDiff = (new Date(session.end_at).getTime() - new Date(session.start_at).getTime()) / (1000 * 60 * 60);
+            }
             let finalOrderCost = null;
             let finalTimeOrder = null;
             const deviceType = yield devTypeRepo.findOne({ where: { id: device.type } });
             if (deviceType) {
                 if (session.time_type == "single") {
-                    finalOrderCost = timeDiff * (deviceType.single_price / 12);
+                    finalOrderCost = timeDiff * deviceType.single_price;
                 }
                 else {
-                    finalOrderCost = timeDiff * (deviceType.multi_price / 12);
+                    finalOrderCost = timeDiff * deviceType.multi_price;
                 }
             }
             if (finalOrderCost) {
-                const createOrder = timeOrderRepo.create({ session_id: session.id, start_at: session.start_at, play_type: session.play_type, cost: finalOrderCost });
+                const createOrder = timeOrderRepo.create({ session_id: session.id, start_at: session.start_at, play_type: session.play_type, cost: Math.floor(finalOrderCost) });
                 finalTimeOrder = yield timeOrderRepo.save(createOrder);
             }
             //  COUNTING ORDERS AND CALCULATING COSTS
@@ -134,7 +140,7 @@ const endSession = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, funct
             const finance = financeRepo.create(financeData);
             const addedFinance = yield financeRepo.save(finance);
             // TIME ORDERS RECEIPT
-            const timeReceiptData = TimeReceiptRepo.create({ orders: orders.toString(), time_orders: timeOrders.toString(), total, cashier: username });
+            const timeReceiptData = TimeReceiptRepo.create({ orders: JSON.stringify(orders), time_orders: JSON.stringify(timeOrders), total, cashier: username, session_id: session.id });
             const timeReceipt = yield TimeReceiptRepo.save(timeReceiptData);
             // SESSION DELETED
             const deletedSession = yield sessionRepo.remove(session);

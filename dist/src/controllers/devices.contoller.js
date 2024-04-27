@@ -22,7 +22,11 @@ const findDevice = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, funct
 exports.findDevice = findDevice;
 const allDevices = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     const devices = yield deviceRepo.find();
-    res.json({ devices });
+    if (devices) {
+        res.json({ devices });
+    }
+    else
+        res.json({ message: "لا يوجد اجهزة" });
 });
 exports.allDevices = allDevices;
 const addDevice = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
@@ -58,11 +62,15 @@ const deleteDevice = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, fun
     const { id } = req.params;
     const device = yield deviceRepo.findOne({ where: { id } });
     if (device) {
-        const deleted = yield deviceRepo.remove(device);
-        res.json({ deleted, message: "تمت إزالة الجهاز بنجاح" });
+        if (device.status == false) {
+            const deleted = yield deviceRepo.remove(device);
+            res.json({ deleted, message: "تمت إزالة الجهاز بنجاح", success: true });
+        }
+        else
+            res.json({ message: "هذا الجهاز مشغول حاليا برجاء اغلاقه أولا", success: false });
     }
     else {
-        res.json({ message: "حدث خطأ" });
+        res.json({ message: "حدث خطأ", success: false });
     }
 });
 exports.deleteDevice = deleteDevice;
@@ -95,11 +103,7 @@ const updateDeviceType = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0,
 exports.updateDeviceType = updateDeviceType;
 const allDeviceTypes = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     const deviceTypes = yield devTypeRepo.find();
-    if (deviceTypes.length > 0) {
-        res.json({ deviceTypes });
-    }
-    else
-        res.json({ message: "حدث خطأ" });
+    deviceTypes.length > 0 ? res.json({ deviceTypes }) : res.json({ message: "برجاء اضافة نوع جهاز من صفحة الاعدادات", success: false });
 });
 exports.allDeviceTypes = allDeviceTypes;
 const findDeviceType = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {

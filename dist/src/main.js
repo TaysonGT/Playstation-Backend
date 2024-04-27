@@ -20,26 +20,20 @@ const receipts_router_1 = tslib_1.__importDefault(require("./routes/receipts.rou
 // Initializing App
 const app = (0, express_1.default)();
 //Database Initializer
-app_data_source_1.myDataSource
-    .initialize()
-    .then(() => {
-    console.log("Data Source Has Been Initialized!");
-})
-    .catch((err) => console.error("Error during data sourve initialization: ", err));
 // Middlewares 
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
 app.use(body_parser_1.default.json());
 app.use((0, cors_1.default)({
     credentials: true,
-    origin: ['https://playstation-frontend.vercel.app'],
+    origin: ["https://playstation-frontend.vercel.app/"],
     methods: ["POST", "GET", "DELETE", "PUT"]
 }));
 app.use(express_1.default.urlencoded({
     extended: true
 }));
 app.use(function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "https://playstation-frontend.vercel.app"); // "*"
+    res.header("Access-Control-Allow-Origin", "https://playstation-frontend.vercel.app/"); // "*"
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
@@ -58,7 +52,33 @@ app.use('/products', products_router_1.default);
 app.use('/config', main_configs_router_1.default);
 app.use('/receipts', receipts_router_1.default);
 // Server Running
-app.listen(5000, () => {
-    console.log("listening to requests on port 5000");
+const initializeDataSource = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield app_data_source_1.myDataSource
+            .initialize()
+            .then(() => {
+            console.log("Data Source Has Been Initialized!");
+        });
+    }
+    catch (error) {
+        throw new Error("failed to initialize data source");
+    }
+});
+const initializingTimeout = 5000;
+const serverInitializationTimeout = setTimeout(() => {
+    console.error("Server Initializing Timed out...");
+    process.exit(1);
+}, initializingTimeout);
+initializeDataSource()
+    .then(() => {
+    app.listen(5000, () => {
+        console.log(`Server running at http://localhost:5000`);
+        clearTimeout(serverInitializationTimeout);
+    });
+})
+    .catch(err => {
+    console.error('Error initializing datasource:', err);
+    clearTimeout(serverInitializationTimeout);
+    process.exit(1);
 });
 //# sourceMappingURL=main.js.map

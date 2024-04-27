@@ -13,10 +13,6 @@ tslib_1.__decorate([
 tslib_1.__decorate([
     (0, typeorm_1.Column)(),
     tslib_1.__metadata("design:type", String)
-], Order.prototype, "device_name", void 0);
-tslib_1.__decorate([
-    (0, typeorm_1.Column)(),
-    tslib_1.__metadata("design:type", String)
 ], Order.prototype, "product_id", void 0);
 tslib_1.__decorate([
     (0, typeorm_1.Column)(),
@@ -30,6 +26,10 @@ tslib_1.__decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     tslib_1.__metadata("design:type", String)
 ], Order.prototype, "device_session_id", void 0);
+tslib_1.__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    tslib_1.__metadata("design:type", String)
+], Order.prototype, "device_name", void 0);
 tslib_1.__decorate([
     (0, typeorm_1.CreateDateColumn)(),
     tslib_1.__metadata("design:type", String)
