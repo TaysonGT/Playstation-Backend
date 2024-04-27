@@ -43,7 +43,7 @@ const createOuterReceipt = (req, res) => tslib_1.__awaiter(void 0, void 0, void 
         const finance = yield financeRepo.save(financeData);
         const receiptData = recieptRepo.create({ cashier, orders: strData, total: cost });
         const receipt = yield recieptRepo.save(receiptData);
-        res.json({ success: true, orders, message: "تم الطلب بنجاح", receipt, finance });
+        res.json({ success: true, orders, message: "تم الطلب بنجاح", receipt, finance, updatedProducts });
     }
     else {
         res.json({ success: false, message: "لا يوجد طلبات" });
