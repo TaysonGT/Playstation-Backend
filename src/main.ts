@@ -42,15 +42,6 @@ app.use(express.urlencoded({
     extended: true
 }))
 
-
-// app.use((req, res, next) => {
-//     if (req.cookies && req.cookies.cookieName) {
-//       res.cookie('cookieName', req.cookies.cookieName, { sameSite: 'strict' });
-//     }
-//     next();
-//   });
-
-
 // Routes
 app.post('/login',userLogin)
 app.post('/firstuser', addUser )

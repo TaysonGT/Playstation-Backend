@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.endSession = exports.addSession = exports.allSessions = exports.changeTime = exports.findSession = void 0;
+exports.endSession = exports.addSession = exports.allSessions = exports.changeDevice = exports.changePlayType = exports.findSession = void 0;
 const tslib_1 = require("tslib");
 const app_data_source_1 = require("../app-data-source");
 const device_entity_1 = require("../entity/device.entity");
@@ -23,37 +23,85 @@ const findSession = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, func
     session ? res.json({ success: true, session }) : res.json({ success: false, message: "حدث خطا" });
 });
 exports.findSession = findSession;
-const changeTime = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+const changeDevice = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const { play_type, time_type } = req.body;
+    const { toDevice } = req.body;
+    const isBusy = yield sessionRepo.findOne({ where: { device_id: toDevice } });
     const session = yield sessionRepo.findOne({ where: { id } });
-    if (session) {
-        const device = yield deviceRepo.findOne({ where: { id: session.device_id } });
-        let cost = 0;
-        const start_at = Date.now();
-        const deviceType = yield devTypeRepo.findOne({ where: { id: device === null || device === void 0 ? void 0 : device.type } });
-        if (deviceType) {
-            if (session.play_type == "single") {
-                const timePrice = deviceType.single_price / 12;
-                if (timePrice)
-                    cost = (Date.parse(session.end_at.toString()) - Date.parse(session.start_at)) / (1000 * 60 * 5) * timePrice;
-            }
-            else {
-                const timePrice = deviceType.multi_price / 12;
-                if (timePrice)
-                    cost = (Date.parse(session.end_at.toString()) - Date.parse(session.start_at)) / (1000 * 60 * 5) * timePrice;
+    if (session && (session === null || session === void 0 ? void 0 : session.time_type) == "time" && new Date(session === null || session === void 0 ? void 0 : session.end_at) < new Date()) {
+        res.json({ message: " لقد انتهى وقت هذا الجهاز بالفعل", success: false });
+    }
+    else {
+        if (session && !isBusy) {
+            const device = yield deviceRepo.findOne({ where: { id: session.device_id } });
+            const nextDevice = yield deviceRepo.findOne({ where: { id: toDevice } });
+            let cost = 0;
+            if (device && nextDevice) {
+                const start_at = Date.now();
+                const deviceType = yield devTypeRepo.findOne({ where: { id: device.type } });
+                if (deviceType) {
+                    if (session.play_type == "single") {
+                        const timePrice = deviceType.single_price;
+                        cost = Math.ceil(((start_at - new Date(session.start_at).getTime()) / (1000 * 60 * 60)) * timePrice);
+                    }
+                    else {
+                        const timePrice = deviceType.multi_price;
+                        cost = Math.ceil(((start_at - new Date(session.start_at).getTime()) / (1000 * 60 * 60)) * timePrice);
+                    }
+                }
+                const timeData = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, start_at: session.start_at };
+                const time_order = timeOrderRepo.create(timeData);
+                const savedTimeOrder = yield timeOrderRepo.save(time_order);
+                const prevDeviceData = Object.assign(device, Object.assign(Object.assign({}, device), { status: false }));
+                const newDeviceData = Object.assign(nextDevice, Object.assign(Object.assign({}, nextDevice), { status: true }));
+                deviceRepo.save(prevDeviceData);
+                deviceRepo.save(newDeviceData);
+                const newSession = Object.assign(session, Object.assign(Object.assign({}, session), { start_at, device_id: toDevice }));
+                const updatedSession = yield sessionRepo.save(newSession);
+                savedTimeOrder && updatedSession ? res.json({ message: "تم نقل الحساب لجهاز اخر", success: true })
+                    : res.json({ message: "حدث خطأ", success: false });
             }
         }
-        const timeData = { session_id: id, play_type, time_type, cost, start_at: session.start_at };
-        const time_order = timeOrderRepo.create(timeData);
-        const savedTimeOrder = yield timeOrderRepo.save(time_order);
-        const newSession = Object.assign(session, Object.assign(Object.assign({}, session), { start_at, play_type, time_type }));
-        const updatedSession = yield sessionRepo.save(newSession);
-        savedTimeOrder && updatedSession ? res.json({ message: "تم التحديث", success: true })
-            : res.json({ message: "حدث خطأ", success: false });
+        else
+            res.json({ message: "هذا الجهاز مشغول حاليا", success: false });
     }
 });
-exports.changeTime = changeTime;
+exports.changeDevice = changeDevice;
+const changePlayType = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const { play_type } = req.body;
+    const session = yield sessionRepo.findOne({ where: { id } });
+    if (session && session.time_type == "time" && new Date(session.end_at) < new Date() && play_type) {
+        res.json({ message: " لقد انتهى وقت هذا الجهاز بالفعل", success: false });
+    }
+    else {
+        let cost = 0;
+        if (session) {
+            const device = yield deviceRepo.findOne({ where: { id: session.device_id } });
+            const start_at = Date.now();
+            const deviceType = yield devTypeRepo.findOne({ where: { id: device === null || device === void 0 ? void 0 : device.type } });
+            const timeDiff = (start_at - new Date(session.start_at).getTime()) / (1000 * 60 * 60);
+            if (deviceType) {
+                if (session.play_type == "single") {
+                    const timePrice = deviceType.single_price;
+                    cost = Math.ceil(timeDiff * timePrice);
+                }
+                else {
+                    const timePrice = deviceType.multi_price;
+                    cost = Math.ceil(timeDiff * timePrice);
+                }
+            }
+            const timeData = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, start_at: session.start_at };
+            const time_order = timeOrderRepo.create(timeData);
+            const savedTimeOrder = yield timeOrderRepo.save(time_order);
+            const newSession = Object.assign(session, Object.assign(Object.assign({}, session), { play_type, start_at }));
+            const updatedSession = yield sessionRepo.save(newSession);
+            savedTimeOrder && updatedSession ? res.json({ message: "تم تغيير نوع اللعب", success: true, updatedSession })
+                : res.json({ message: "حدث خطأ", success: false });
+        }
+    }
+});
+exports.changePlayType = changePlayType;
 const allSessions = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     const sessions = yield sessionRepo.find();
     res.json({ sessions });
@@ -117,7 +165,7 @@ const endSession = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, funct
                 }
             }
             if (finalOrderCost) {
-                const createOrder = timeOrderRepo.create({ session_id: session.id, start_at: session.start_at, play_type: session.play_type, cost: Math.floor(finalOrderCost) });
+                const createOrder = timeOrderRepo.create({ session_id: session.id, start_at: session.start_at, play_type: session.play_type, cost: Math.ceil(finalOrderCost) });
                 finalTimeOrder = yield timeOrderRepo.save(createOrder);
             }
             //  COUNTING ORDERS AND CALCULATING COSTS

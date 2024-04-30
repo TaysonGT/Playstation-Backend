@@ -21,9 +21,8 @@ const receipts_router_1 = tslib_1.__importDefault(require("./routes/receipts.rou
 const app = (0, express_1.default)();
 //Database Initializer
 app.get('/', function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.header("Access-Control-Allow-methods", 'GET, POST, PUT, DELETE');
     next();
 });
 // Middlewares 
@@ -32,18 +31,12 @@ app.use((0, cookie_parser_1.default)());
 app.use(body_parser_1.default.json());
 app.use((0, cors_1.default)({
     credentials: true,
-    origin: ["https://playstation-frontend.vercel.app"],
+    origin: ["http://localhost:3000"],
     methods: ["POST", "GET", "DELETE", "PUT"]
 }));
 app.use(express_1.default.urlencoded({
     extended: true
 }));
-// app.use((req, res, next) => {
-//     if (req.cookies && req.cookies.cookieName) {
-//       res.cookie('cookieName', req.cookies.cookieName, { sameSite: 'strict' });
-//     }
-//     next();
-//   });
 // Routes
 app.post('/login', users_controller_1.userLogin);
 app.post('/firstuser', users_controller_1.addUser);

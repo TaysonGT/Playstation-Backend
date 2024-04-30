@@ -15,8 +15,8 @@ tslib_1.__decorate([
     tslib_1.__metadata("design:type", String)
 ], TimeReceipt.prototype, "session_id", void 0);
 tslib_1.__decorate([
-    (0, typeorm_1.CreateDateColumn)({ default: Date.now() }),
-    tslib_1.__metadata("design:type", Date)
+    (0, typeorm_1.CreateDateColumn)(),
+    tslib_1.__metadata("design:type", String)
 ], TimeReceipt.prototype, "end_at", void 0);
 tslib_1.__decorate([
     (0, typeorm_1.Column)(),

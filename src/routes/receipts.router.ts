@@ -1,10 +1,12 @@
-import {createOuterReceipt, allOuterReceipts, findOuterReceipt } from '../controllers/receipts.controller'
+import {createOuterReceipt, allOuterReceipts, findOuterReceipt, allSessionReceipts, findSessionReceipt } from '../controllers/receipts.controller'
 
 import express from 'express';
 const receiptsRouter = express.Router()
 
-receiptsRouter.post('/', createOuterReceipt)
-receiptsRouter.get('/', allOuterReceipts)
-receiptsRouter.get('/:id', findOuterReceipt)
+receiptsRouter.post('/outer', createOuterReceipt)
+receiptsRouter.get('/outer', allOuterReceipts)
+receiptsRouter.get('/session', allSessionReceipts)
+receiptsRouter.get('/outer/:id', findOuterReceipt)
+receiptsRouter.get('/session/:id', findSessionReceipt)
 
 export default receiptsRouter;

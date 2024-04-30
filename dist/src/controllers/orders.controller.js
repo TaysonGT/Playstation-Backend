@@ -61,7 +61,7 @@ const addOrder = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, functio
     const product = yield productRepo.findOne({ where: { id: product_id } });
     if (product && device) {
         const cost = product.price * quantity;
-        let orderData = { product_id, quantity, device_session_id: sessionId, device_name: device.name, cost };
+        let orderData = { product_id, quantity, product_name: product.name, device_session_id: sessionId, device_name: device.name, cost };
         const order = orderRepo.create(orderData);
         const created = yield orderRepo.save(order);
         const stock = product.stock - quantity;
