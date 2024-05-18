@@ -1,13 +1,19 @@
 import {
-    deleteUser,
-    addUser,
+  allUsers,
+  findUser,
+  updateUser,
+  deleteUser,
+  addUser,
 } from '../controllers/users.controller'
-
+import {isAdmin} from '../middleware/user.auth'
 import express from 'express';
 const userRouter = express.Router()
 
-userRouter.delete('/delete', deleteUser)
-userRouter.post('/add', addUser)
-
+userRouter.use(isAdmin);
+userRouter.get('/', allUsers);
+userRouter.get('/:id', findUser);
+userRouter.delete('/:id', deleteUser);
+userRouter.put('/:id', updateUser);
+userRouter.post('/', addUser);
 
 export default userRouter;

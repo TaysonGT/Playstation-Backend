@@ -34,11 +34,6 @@ const saveConfigs = async (req: Request, res: Response)=>{
         }
     }
 
-    console.log("name")
-    console.log(name)
-    console.log("phone")
-    console.log(phone)
-
     if((phone== null || phone == undefined)&&(name== null || name == undefined)){
         res.json({message: "لم يتم إدخال أي بيانات", success:false})
     }else{

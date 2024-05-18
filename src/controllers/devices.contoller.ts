@@ -22,8 +22,7 @@ const findDevice = async (req:Request, res:Response)=>{
 
 const allDevices = async (req:Request, res:Response)=>{
     const devices = await deviceRepo.find()
-    if(devices) { res.json({devices}) } 
-    else res.json({message: "لا يوجد اجهزة"})
+    res.json({devices: devices? devices.sort((a,b)=>a.name-b.name): []})
 }
 
 const addDevice = async(req: Request, res: Response)=>{

@@ -50,14 +50,8 @@ const sessionOrders = async (req:Request, res:Response)=>{
             arrangedOrders.push(entity)
         }
     })
-
-
-
-
-    if(orders||timeOrders){
-        res.json({orders, timeOrders, arrangedOrders})
-    }else res.json({message: "لا يوجد طلبات على هذا الجهاز"})
-
+  
+    res.json({orders, timeOrders, arrangedOrders})
 }
 
 const addOrder = async(req: Request, res: Response)=>{
