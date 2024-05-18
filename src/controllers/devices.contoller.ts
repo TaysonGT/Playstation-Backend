@@ -22,7 +22,7 @@ const findDevice = async (req:Request, res:Response)=>{
 
 const allDevices = async (req:Request, res:Response)=>{
     const devices = await deviceRepo.find()
-    res.json({devices: devices? devices.sort((a,b)=>a.name-b.name): []})
+    res.json({devices: devices? devices.sort((a,b)=>a.name.localeCompare(b.name)): []})
 }
 
 const addDevice = async(req: Request, res: Response)=>{
