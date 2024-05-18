@@ -1,15 +1,14 @@
 import express from 'express';
 import { myDataSource } from './app-data-source';
 import cors from 'cors';
-import {addUser, allUsers, userLogin} from './controllers/users.controller';
-// import { addAuth, auth, isSigned, } from './middleware/user.auth';
+import {addUser, userLogin, checkUsers} from './controllers/users.controller';
+import { auth } from './middleware/user.auth';
 import devicesRouter from './routes/devices.router';
 import ordersRouter from './routes/orders.router';
-import { NextFunction, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
-import  BodyParser from 'body-parser';
+import BodyParser from 'body-parser';
+import userRouter from './routes/users.router'
 import sessionRouter from './routes/session.router';
-import gamesRouter from './routes/games.router';
 import financeRouter from './routes/finance.router';
 import productsRouter from './routes/products.router';
 import deviceTypesRouter from './routes/device-types.router';
@@ -19,23 +18,15 @@ import receiptsRouter from './routes/receipts.router';
 // Initializing App
 const app = express()
 
-
-//Database Initializer
-
-
-app.get('/', function (req: Request, res: Response, next: NextFunction) {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    next();
-});
-
 // Middlewares 
 app.use(express.json())
 app.use(cookieParser())
 app.use(BodyParser.json())
 app.use(cors({
     credentials: true,
-     origin: ["http://localhost:3000"],
+    // origin: ["https://playstation-frotend.vercel.app"],
+    // origin: ["https://playstation-frontend.onrender.com"],
+    origin: ["http://localhost:3000"],
     methods: ["POST", "GET", "DELETE", "PUT"]
 }))
 app.use(express.urlencoded({
@@ -45,24 +36,19 @@ app.use(express.urlencoded({
 // Routes
 app.post('/login',userLogin)
 app.post('/firstuser', addUser )
-app.get('/firstuser', allUsers )
-
-// app.use(auth)
+app.get('/firstuser', checkUsers )
+app.use(auth)
+app.use('/users', userRouter)
 app.use('/orders', ordersRouter)
 app.use('/devices', devicesRouter )
 app.use('/sessions', sessionRouter )
 app.use('/device-types', deviceTypesRouter)
-app.use('/games', gamesRouter )
 app.use('/finances', financeRouter )
 app.use('/products', productsRouter )
 app.use('/config', configsRouter )
 app.use('/receipts', receiptsRouter)
 
 // Server Running
-
-
-
-
 const initializeDataSource = async ()=>{
     try{
         await myDataSource
@@ -84,9 +70,9 @@ const serverInitializationTimeout = setTimeout(()=>{
 
 initializeDataSource()
   .then(() => {
-        app.listen(5000, () => {
-        console.log(`Server running at http://localhost:5000`);
-        clearTimeout(serverInitializationTimeout); 
+      app.listen(5000, () => {
+      console.log(`Server running at http://localhost:5000`);
+      clearTimeout(serverInitializationTimeout); 
     });
   })
   .catch(err => {

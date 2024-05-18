@@ -9,6 +9,9 @@ export class Order {
     product_id: string;
     
     @Column()
+    product_name: string;
+    
+    @Column()
     quantity: number;
     
     @Column()

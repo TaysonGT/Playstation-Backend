@@ -22,4 +22,7 @@ export class TimeReceipt{
 
     @Column()
     cashier: string
+    
+    @Column()
+    cashier_id: string
 }

@@ -7,6 +7,9 @@ export class Receipt{
 
     @Column()
     cashier: string;
+
+    @Column()
+    cashier_id: string;
     
     @Column()
     orders: string;

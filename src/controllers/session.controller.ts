@@ -140,14 +140,15 @@ const addSession = async (req: Request, res: Response) => {
 }
 
 const endSession = async (req: Request, res: Response) => {
-  const username = req.cookies.username;
+  const cashier = req.headers.username?.toString().split(' ')[1];
+  const cashier_id = req.headers.user_id?.toString().split(' ')[1];
   const { id } = req.params
 
   let deviceStatus = false
 
 
   const session = await sessionRepo.findOne({ where: { id } })
-  if (session) {
+  if (session && cashier && cashier_id) {
 
     const device = await deviceRepo.findOne({ where: { id: session.device_id } })
     if (device) {
@@ -170,7 +171,7 @@ const endSession = async (req: Request, res: Response) => {
       const deviceType = await devTypeRepo.findOne({ where: { id: device.type } })
 
       if (deviceType) {
-        if (session.time_type == "single") {
+        if (session.play_type == "single") {
           finalOrderCost = timeDiff * deviceType.single_price
         } else {
           finalOrderCost = timeDiff * deviceType.multi_price
@@ -202,13 +203,16 @@ const endSession = async (req: Request, res: Response) => {
 
 
       // FINANCES OPERATIONS
-      let description = `${username} Ended Device: ${device.name}, With ${ordersCount} Orders, and with Total of ${total}`
-      const financeData: addFinanceDto = { finances: total, type: "Device", description, username }
+      let description = `تم انهاء جهاز: ${device.name} وبعدد ${ordersCount} من الطلبات بإجمالي ${total}ج`;
+      const financeData: addFinanceDto = { finances: total, type: "Device",
+      description, cashier, cashier_id }
       const finance = financeRepo.create(financeData)
       const addedFinance = await financeRepo.save(finance)
 
       // TIME ORDERS RECEIPT
-      const timeReceiptData = TimeReceiptRepo.create({ orders: JSON.stringify(orders), time_orders: JSON.stringify(timeOrders), total, cashier: username, session_id: session.id })
+      const timeReceiptData = TimeReceiptRepo.create({ orders:
+      JSON.stringify(orders), time_orders: JSON.stringify(timeOrders), total,
+      cashier, cashier_id, session_id: session.id })
       const timeReceipt = await TimeReceiptRepo.save(timeReceiptData);
 
       // SESSION DELETED
