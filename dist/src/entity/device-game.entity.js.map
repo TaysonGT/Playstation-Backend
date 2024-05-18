@@ -1,1 +1,0 @@
-{"version":3,"file":"device-game.entity.js","sourceRoot":"","sources":["../../../src/entity/device-game.entity.ts"],"names":[],"mappings":";;;;AAAA,qCAAiE;AAG1D,IAAM,UAAU,GAAhB,MAAM,UAAU;CAStB,CAAA;AATY,gCAAU;AAEnB;IADC,IAAA,gCAAsB,EAAC,MAAM,CAAC;;sCACrB;AAGV;IADC,IAAA,gBAAM,GAAE;;6CACS;AAGlB;IADC,IAAA,gBAAM,GAAE;;2CACO;qBARP,UAAU;IADtB,IAAA,gBAAM,EAAC,cAAc,CAAC;GACV,UAAU,CAStB"}
