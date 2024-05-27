@@ -105,9 +105,7 @@ const userLogin = async (req: Request, res: Response) => {
 
 const allUsers = async (req: Request, res: Response) => {
   const users = await userRepo.find()
-  if (users.length > 0) {
-    res.json({ message: "هناك مستخدم موجود بالفعل", existing: true })
-  } else res.json({ existing: false, message: "لا يوجد مستخدمين" })
+  res.json({ users })
 }
 
 const checkUsers = async (req: Request, res: Response) => {

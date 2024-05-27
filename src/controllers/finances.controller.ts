@@ -10,7 +10,11 @@ const orderRepo = myDataSource.getRepository(Order)
 
 const statisticFinances = async (req:Request, res:Response)=>{
     const { date, user } = req.params;
-    const finances = await financeRepo.find({where:{cashier_id: user}})
+    let finances = [];
+    user=="all"? finances= await financeRepo.find() :finances = await
+    financeRepo.find({where:{cashier_id: user}});
+    
+    
     
     let lastDay = 0;
     let dailyFinances = 0;
