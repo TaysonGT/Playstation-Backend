@@ -84,13 +84,14 @@ const updateUser = async (req: Request, res: Response) => {
 
 const userLogin = async (req: Request, res: Response) => {
   const { username, password } = req.body;
-  const trimmedPass = password.trim();
-  const trimmedUser = username.trim();
+  const trimmedPass:string = password.trim();
+  const trimmedUser:string = username.trim();
   const user = await userRepo.createQueryBuilder("users")
     .where("LOWER(users.username) = LOWER(:query)", { query: `${trimmedUser}` })
     .getOne();
 
   if (user) {
+    console.log(user.password, trimmedPass)
     if (user.password == trimmedPass) {
       const token = jwt.sign({ trimmedUser }, "tayson", { expiresIn: '8h' })
       res.json({ messsage: "تم تسجيل الدخول بنجاح ", success: true, token,
@@ -111,7 +112,7 @@ const allUsers = async (req: Request, res: Response) => {
 const checkUsers = async (req: Request, res: Response) => {
   const users = await userRepo.find();
   if (users.length > 0) {
-    res.json({ message: "هناك مستخدم موجود بالفعل", existing: true });
+    res.json({ message: "هناك مستخدم موجود بالفعل", existing: true, users });
   }else
     res.json({ existing: false, message: "لا يوجد مستخدمين" });
 }
