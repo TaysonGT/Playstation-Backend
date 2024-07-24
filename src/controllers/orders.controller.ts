@@ -62,7 +62,7 @@ const addOrder = async(req: Request, res: Response)=>{
     const product = await productRepo.findOne({where:{id: product_id}})
     if(product && device){ 
         const cost = product.price * quantity;
-        let orderData:addOrderDto  = {product_id, quantity, device_session_id:sessionId, device_name: device.name, cost}
+        let orderData:addOrderDto  = {product_id, product_name:product.name , quantity, device_session_id:sessionId, device_name: device.name, cost}
         const order = orderRepo.create(orderData)
         const created = await orderRepo.save(order)
         const stock = product.stock - quantity;
