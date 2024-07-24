@@ -25,8 +25,8 @@ app.use(BodyParser.json())
 app.use(cors({
     credentials: true,
     // origin: ["https://playstation-frotend.vercel.app"],
-    origin: ["https://playstation-frontend.onrender.com"],
-    // origin: ["http://localhost:3000"],
+    // origin: ["https://playstation-frontend.onrender.com"],
+    origin: ["http://localhost:3000"],
     methods: ["POST", "GET", "DELETE", "PUT"]
 }))
 app.use(express.urlencoded({
