@@ -146,7 +146,7 @@ const endSession = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, funct
             const deviceData = Object.assign(Object.assign(Object.assign({}, device), { name: device.name, type: device.type, status: deviceStatus }));
             const updatedDevice = yield deviceRepo.save(deviceData);
             let timeDiff = null;
-            // SENDING FINAL TIME ORDER BEFORE CALCULATING ALL TIME ORDERS
+            // WRAPPING FINAL TIME ORDER BEFORE CALCULATING ALL TIME ORDERS
             if (session.time_type == "open") {
                 timeDiff = (new Date().getTime() - new Date(session.start_at).getTime()) / (1000 * 60 * 60);
             }
