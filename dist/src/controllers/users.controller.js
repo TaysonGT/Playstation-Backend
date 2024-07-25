@@ -118,7 +118,7 @@ exports.allUsers = allUsers;
 const checkUsers = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     const users = yield userRepo.find();
     if (users.length > 0) {
-        res.json({ message: "هناك مستخدم موجود بالفعل", existing: true, users });
+        res.json({ message: "هناك مستخدم موجود بالفعل", existing: true });
     }
     else
         res.json({ existing: false, message: "لا يوجد مستخدمين" });
