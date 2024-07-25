@@ -157,7 +157,7 @@ const endSession = async (req: Request, res: Response) => {
       const updatedDevice = await deviceRepo.save(deviceData)
       let timeDiff = null;
 
-      // SENDING FINAL TIME ORDER BEFORE CALCULATING ALL TIME ORDERS
+      // WRAPPING FINAL TIME ORDER BEFORE CALCULATING ALL TIME ORDERS
       if (session.time_type == "open") {
         timeDiff = (new Date().getTime() - new Date(session.start_at).getTime()) / (1000 * 60 * 60)
       } else {

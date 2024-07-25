@@ -43,9 +43,10 @@ const statisticFinances = async (req:Request, res:Response)=>{
     let productsRevenue = 0;
     let productsGrowthLoss = 0;
     let productsGrowthLossSign = false;
-    const currentDay = new Date(new Date(new Date(date).toLocaleDateString()).setUTCHours(3, 0, 0, 0));
-    const tomorrow = currentDay;
-    tomorrow.setUTCDate(currentDay.getDate() + 1);
+    const currentDay = new Date(date);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getUTCDate() + 1);
+    tomorrow.setUTCHours(0, 0, 0, 0);
     
     const currentDayFinances = finances.filter((finance) => new Date(new Date(finance.added_at).setHours(2, 0, 0, 0)).getDate() == currentDay.getDate() && currentDay.getMilliseconds() - new Date(new Date(finance.added_at).setHours(2, 0, 0, 0)).getMilliseconds() <= 24 * 60 * 60 * 1000);
     const firstDayOfPreviousMonth = new Date(currentDay.getFullYear(), currentDay.getMonth() - 1, 1);
