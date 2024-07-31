@@ -56,15 +56,23 @@ const addOrder = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, functio
     const device = yield deviceRepo.findOne({ where: { id: session === null || session === void 0 ? void 0 : session.device_id } });
     const product = yield productRepo.findOne({ where: { id: product_id } });
     if (product && device) {
+        const existingOrderedProd = yield orderRepo.findOne({ where: { product_id, device_session_id: sessionId } });
         const cost = product.price * quantity;
-        let orderData = { product_id, product_name: product.name, quantity, device_session_id: sessionId, device_name: device.name, cost };
-        const order = orderRepo.create(orderData);
-        const created = yield orderRepo.save(order);
+        let savedOrder = {};
+        if (existingOrderedProd) {
+            const updateOrderedProd = Object.assign(existingOrderedProd, { cost: existingOrderedProd.cost + cost, quantity: existingOrderedProd.quantity + parseInt(quantity) });
+            savedOrder = yield orderRepo.save(updateOrderedProd);
+        }
+        else {
+            let orderData = { product_id, product_name: product.name, quantity, device_session_id: sessionId, device_name: device.name, cost };
+            const order = orderRepo.create(orderData);
+            savedOrder = yield orderRepo.save(order);
+        }
         const stock = product.stock - quantity;
         const consumed = product.consumed + quantity;
         const updateProductsData = Object.assign(product, { stock, consumed });
         const updatedProducts = yield productRepo.save(updateProductsData);
-        res.json({ success: true, created, updatedProducts, message: "تمت إضافةالطلب بنجاح" });
+        res.json({ success: true, savedOrder, updatedProducts, message: "تمت إضافةالطلب بنجاح" });
     }
     else
         res.json({ success: false, message: "حدث خطأ" });

@@ -192,8 +192,8 @@ const endSession = async (req: Request, res: Response) => {
       let ordersCount = 0
       if (orders.length > 0) {
         orders.map((order) => {
-          total = +order.cost
-          ordersCount++
+          total += order.cost
+          ordersCount += order.quantity;
         })
       }
 
