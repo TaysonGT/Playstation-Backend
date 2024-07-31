@@ -60,16 +60,24 @@ const addOrder = async(req: Request, res: Response)=>{
     const session = await sessionRepo.findOne({where:{id: sessionId}})
     const device = await deviceRepo.findOne({where:{id:session?.device_id}})
     const product = await productRepo.findOne({where:{id: product_id}})
+
     if(product && device){ 
+        const existingOrderedProd = await orderRepo.findOne({where:{product_id, device_session_id: sessionId}})
         const cost = product.price * quantity;
-        let orderData:addOrderDto  = {product_id, product_name:product.name , quantity, device_session_id:sessionId, device_name: device.name, cost}
-        const order = orderRepo.create(orderData)
-        const created = await orderRepo.save(order)
+        let savedOrder: any = {}
+        if(existingOrderedProd){
+            const updateOrderedProd:addOrderDto = Object.assign(existingOrderedProd, {cost: existingOrderedProd.cost + cost , quantity: existingOrderedProd.quantity + parseInt(quantity)})     
+            savedOrder = await orderRepo.save(updateOrderedProd);
+        }else{
+            let orderData:addOrderDto  = {product_id, product_name:product.name , quantity, device_session_id:sessionId, device_name: device.name, cost}
+            const order = orderRepo.create(orderData)
+            savedOrder = await orderRepo.save(order)
+        }
         const stock = product.stock - quantity;
         const consumed = product.consumed + quantity;
         const updateProductsData:addProductDto = Object.assign(product, {stock, consumed}) 
         const updatedProducts = await productRepo.save(updateProductsData)
-        res.json({success: true, created, updatedProducts, message: "تمت إضافةالطلب بنجاح"})
+        res.json({success: true, savedOrder, updatedProducts, message: "تمت إضافةالطلب بنجاح"})
     }else res.json({success: false, message: "حدث خطأ"})
 }
 

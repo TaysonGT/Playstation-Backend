@@ -177,8 +177,8 @@ const endSession = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, funct
             let ordersCount = 0;
             if (orders.length > 0) {
                 orders.map((order) => {
-                    total = +order.cost;
-                    ordersCount++;
+                    total += order.cost;
+                    ordersCount += order.quantity;
                 });
             }
             if (timeOrders.length > 0 && finalTimeOrder) {
