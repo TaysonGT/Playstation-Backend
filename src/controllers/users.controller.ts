@@ -64,13 +64,17 @@ const deleteUser = async (req: Request, res: Response) => {
 const updateUser = async (req: Request, res: Response) => {
   const { id, username, password, admin } = req.body;
   const user = await userRepo.findOne({ where: { id } });
-  const users = await userRepo.find();
+  const admins = await userRepo.find({where: {admin: true}});
+  let pwd:string = password? password: '';
   if (user) {
     let role = null;
-    admin ? role = true : role = false;
-    if (users.length < 2 && role == false) {
+    admin == "admin" ? role = true : role = false;
+    if (!password && !username && role == user.admin){
+      res.json({ message: "لم يتم إدخال أي بيانات", success: false });
+    }
+    else if (admins.length < 2 && role == false) {
       res.json({ message: "يجب ان يكون هناك مستخدم واحد مسؤول على الأقل", success: false });
-    } else if (password.length < 6) {
+    } else if (password && pwd.length < 6) {
       res.json({ message: "كلمة السر يجب ان تتكون من 6 حروف على الاقل", success: false });
     } else {
       const userData = { username, password, admin };
