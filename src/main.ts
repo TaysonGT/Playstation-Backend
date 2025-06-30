@@ -18,7 +18,7 @@ import receiptsRouter from './routes/receipts.router';
 // Initializing App
 const app = express()
 
-const allowedOrigins = process.env.NODE_ENV == 'production' ? "https://playstation-frotend.vercel.app" : "http://localhost:3000"
+const allowedOrigins = process.env.NODE_ENV == 'production' ? "https://playstation-frontend.vercel.app" : "http://localhost:3000"
 
 // Middlewares 
 app.use(express.json())
