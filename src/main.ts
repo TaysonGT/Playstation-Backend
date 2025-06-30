@@ -18,15 +18,17 @@ import receiptsRouter from './routes/receipts.router';
 // Initializing App
 const app = express()
 
+const allowedOrigins = [
+    process.env.NODE_ENV == 'production' ? "https://playstation-frotend.vercel.app" : "http://localhost:3000"
+]
+
 // Middlewares 
 app.use(express.json())
 app.use(cookieParser())
 app.use(BodyParser.json())
 app.use(cors({
     credentials: true,
-    // origin: ["https://playstation-frotend.vercel.app"],
-    // origin: ["https://playstation-frontend.onrender.com"],
-    origin: ["http://localhost:3000"],
+    origin: allowedOrigins,
     methods: ["POST", "GET", "DELETE", "PUT"]
 }))
 app.use(express.urlencoded({
