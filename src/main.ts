@@ -37,7 +37,7 @@ app.use(express.urlencoded({
 app.post('/login',userLogin)
 app.post('/firstuser', addUser )
 app.get('/firstuser', checkUsers )
-app.use(auth)
+// app.use(auth)
 app.use('/users', userRouter)
 app.use('/orders', ordersRouter)
 app.use('/devices', devicesRouter )
