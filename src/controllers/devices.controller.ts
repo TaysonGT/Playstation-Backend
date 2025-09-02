@@ -16,13 +16,14 @@ const findDevice = async (req:Request, res:Response)=>{
 
     if(device) {
         const session = await sessionRepo.find({where: {device_id: id}})
-        res.json({device, session}) 
-    }else res.json({message: "هذا الجهاز غير موجود"})
+        res.json({device, session, success: true}) 
+    }else res.json({message: "هذا الجهاز غير موجود", success: false})
 }
 
 const allDevices = async (req:Request, res:Response)=>{
     const devices = await deviceRepo.find()
-    res.json({devices: devices? devices.sort((a,b)=>a.name.localeCompare(b.name)): []})
+    const deviceTypes = await devTypeRepo.find()
+    res.json({devices: devices? devices.sort((a,b)=>a.name.localeCompare(b.name)): [], deviceTypes, success: true})
 }
 
 const addDevice = async(req: Request, res: Response)=>{
@@ -51,9 +52,9 @@ const updateDevice = async (req: Request, res:Response) =>{
     if(device){
         const updatedDevice = Object.assign(device, deviceData)
         const updated = await deviceRepo.save(updatedDevice)
-        res.json({updated, message: "تم تحديث الجهاز بنجاح"})
+        res.json({updated, message: "تم تحديث الجهاز بنجاح", success: true})
     }else {
-        res.json({message: "هذا الجهاز غير موجود"})
+        res.json({message: "هذا الجهاز غير موجود", success: false})
     }
 }
 
@@ -74,9 +75,11 @@ const addDeviceType = async (req:Request, res:Response) =>{
     const {name, single_price, multi_price} = req.body
     const typeData = devTypeRepo.create({name,single_price, multi_price})
     const savedType = await devTypeRepo.save(typeData)
-    if(savedType){
-        res.json({message: "تم إضافة نوع جهاز جديد", success: true})
-    } else res.json({message: "حدث خطأ", success: false})
+    if(!savedType){
+        res.json({message: "حدث خطأ", success: false})
+        return;
+    }
+    res.json({message: "تم إضافة نوع جهاز جديد", success: true})
 }
 
 const updateDeviceType = async (req:Request, res:Response) =>{
@@ -85,25 +88,40 @@ const updateDeviceType = async (req:Request, res:Response) =>{
     const deviceType = await devTypeRepo.findOne({where: {id}})
     let currentSinglePrice = null
     let currentMultiPrice = null
-    if(deviceType){
-        singlePrice ? currentSinglePrice = singlePrice : currentSinglePrice = deviceType.single_price
-        multiPrice ? currentMultiPrice = multiPrice : currentMultiPrice = deviceType.multi_price
-        const savedDeviceType = await devTypeRepo.save(Object.assign(deviceType, {single_price: currentSinglePrice, multi_price: currentMultiPrice}))
-        singlePrice||multiPrice? res.json({success: true, savedDeviceType, message: "تم حفظ التعديلات بنجاح"}) : res.json({success: false, message: "لم يتم إدخال أي بيانات"})
-    }else res.json({succes:false, message: "حدث خطأ"})
+    if(!deviceType) {
+        res.json({succes:false, message: "حدث خطأ"})
+        return;
+    }
+    singlePrice ? currentSinglePrice = singlePrice : currentSinglePrice = deviceType.single_price
+    multiPrice ? currentMultiPrice = multiPrice : currentMultiPrice = deviceType.multi_price
+    const savedDeviceType = await devTypeRepo.save(Object.assign(deviceType, {single_price: currentSinglePrice, multi_price: currentMultiPrice}))
+    
+    if(!singlePrice&&!multiPrice){
+        res.json({success: false, message: "لم يتم إدخال أي بيانات"})
+        return
+    }
+
+    res.json({success: true, savedDeviceType, message: "تم حفظ التعديلات بنجاح"}) 
+        
 }
 
 const allDeviceTypes = async (req:Request, res:Response) =>{
     const deviceTypes = await devTypeRepo.find()
-    deviceTypes.length>0 ? res.json({deviceTypes}) : res.json({message: "برجاء اضافة نوع جهاز من صفحة الاعدادات", success: false})
+    if(!deviceTypes.length){
+        res.json({message: "برجاء اضافة نوع جهاز من صفحة الاعدادات", success: false})
+        return;
+    }
+    res.json({deviceTypes, success: true})         
 }
 
 const findDeviceType = async (req:Request, res:Response) =>{
     const {id} = req.params
     const deviceType = await devTypeRepo.findOne({where:{id}})
-    if(deviceType){
-        res.json({deviceType})
-    }else res.json({message: "حدث خطأ"})
+    if(!deviceType){
+        res.json({message: "حدث خطأ", success: false})
+        return;
+    }
+    res.json({deviceType, success: true})
 }
 
 
