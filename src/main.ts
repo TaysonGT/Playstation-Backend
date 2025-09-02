@@ -18,7 +18,7 @@ import receiptsRouter from './routes/receipts.router';
 // Initializing App
 const app = express()
 
-const allowedOrigins = process.env.NODE_ENV == 'production' ? "https://playstation-frontend.vercel.app" : "http://localhost:3000"
+const allowedOrigins = process.env.NODE_ENV == 'production' ? "https://playstation-frontend.vercel.app" : true
 
 // Middlewares 
 app.use(express.json())
@@ -57,26 +57,17 @@ const initializeDataSource = async ()=>{
             console.log("Data Source Has Been Initialized!")
         })
     }catch(error){
-        throw new Error("failed to initialize data source")
+        throw new Error(error)
     }
 }
 
-const initializingTimeout = 5000;
-
-const serverInitializationTimeout = setTimeout(()=>{
-    console.error("Server Initializing Timed out...")
-    process.exit(1)
-}, initializingTimeout)
-
 initializeDataSource()
   .then(() => {
-      app.listen(5000, () => {
-      console.log(`Server running at http://localhost:5000`);
-      clearTimeout(serverInitializationTimeout); 
+    app.listen(5000, () => {
+        console.log(`Server running at http://localhost:5000`);
     });
   })
   .catch(err => {
     console.error('Error initializing datasource:', err);
-    clearTimeout(serverInitializationTimeout); 
     process.exit(1); 
   });

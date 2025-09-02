@@ -1,4 +1,4 @@
-import { findDevice, allDevices, addDevice, updateDevice, deleteDevice} from "../controllers/devices.contoller";
+import { findDevice, allDevices, addDevice, updateDevice, deleteDevice} from "../controllers/devices.controller";
 import {isAdmin} from '../middleware/user.auth'
 
 import express from 'express';

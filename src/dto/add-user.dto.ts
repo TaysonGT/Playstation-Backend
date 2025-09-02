@@ -1,5 +1,6 @@
 export class addUserDto {
-   username: string;
+    id:string;
+    username: string;
     password: string;
     admin: boolean;
 }

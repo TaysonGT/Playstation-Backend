@@ -18,10 +18,10 @@ export class Order {
     cost:number
     
     @Column({nullable: true})
-    device_session_id: string;
+    device_session_id?: string;
     
     @Column({nullable: true})
-    device_name: string;
+    device_name?: string;
 
     @CreateDateColumn()
     time_ordered: string;
