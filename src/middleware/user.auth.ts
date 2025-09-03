@@ -6,13 +6,13 @@ import { myDataSource } from '../app-data-source';
 const userRepo = myDataSource.getRepository(User)
 
 export const auth = async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.headers.authorization?.toString().split(' ')[1]
-    if(token){ 
-        const verify = jwt.verify(token, "tayson")
-        verify? next() : res.json({message: "Invalid Session! Please Logout and Sign In again...", success: false})
-    }else{
+    const token = req.headers.authorization?.split(' ')[1]
+    if(!token){ 
         res.json({success: false, message: "You're not signed in"})
+        return;
     }
+    const verify = jwt.verify(token, "tayson")
+    verify? next() : res.json({message: "Invalid Session! Please Logout and Sign In again...", success: false})
 }
 
 export const isAdmin = async (req: Request, res: Response, next: NextFunction) => {

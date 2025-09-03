@@ -4,7 +4,6 @@ import {isAdmin} from '../middleware/user.auth'
 import express from 'express';
 const devicesRouter = express.Router()
 
-
 devicesRouter.get('/', allDevices) 
 devicesRouter.post('/', isAdmin, addDevice)
 devicesRouter.post('/:id', isAdmin, updateDevice)

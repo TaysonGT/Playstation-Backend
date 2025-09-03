@@ -4,9 +4,9 @@
   "description": "",
   "main": "./dist/src/main.js",
   "scripts": {
-    "dev": "nodemon ./dist/src/main.js",
-    "start": "node ./dist/src/main.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/main.ts",
+    "start": "node dist/src/main.js",
+    "build": "npx tsc"
   },
   "author": "",
   "license": "ISC",
@@ -17,7 +17,6 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
-    "framer-motion": "^12.23.7",
     "jsonwebtoken": "^9.0.2",
     "typeorm": "^0.3.25"
   },
@@ -28,6 +27,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
 }
