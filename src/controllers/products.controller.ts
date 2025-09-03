@@ -19,18 +19,24 @@ const allProducts = async (req:Request, res:Response)=>{
 
 const addProduct = async(req: Request, res: Response)=>{
     const {name, price, stock} = req.body;
-    let consumed = 0;
-    const product = productRepo.create({name, price, stock, consumed })
+    const product = productRepo.create({name, price, stock })
     
-    if(name && price && stock){ 
-        const isFound = await productRepo.createQueryBuilder("products")
-            .where("LOWER(products.name) LIKE LOWER(:query)", { query: `%${name.toLowerCase()}%` })
-            .getOne();
-        if(!isFound){
-            const created = await productRepo.save(product)
-            res.json({success: true, created, message: "تمت إضافة المنتج بنجاح"});
-        }else res.json({success: false, message: "هذا المنتج موجود بالفعل", isFound})
-    }else res.json({succes: false, message: "برجاء ملء جميع البيانات"})
+    if(!(name && price && stock)){ 
+        res.json({succes: false, message: "برجاء ملء جميع البيانات"})
+        return;
+    }
+
+    const isFound = await productRepo.createQueryBuilder("products")
+        .where("LOWER(products.name) LIKE LOWER(:query)", { query: `%${name.toLowerCase()}%` })
+        .getExists();
+
+    if(isFound){
+        res.json({success: false, message: "هذا المنتج موجود بالفعل", isFound})
+        return
+    }
+
+    await productRepo.save(product)
+    res.json({success: true, product, message: "تمت إضافة المنتج بنجاح"});
 }
 
 const updateProduct = async (req: Request, res:Response) =>{
@@ -41,7 +47,7 @@ const updateProduct = async (req: Request, res:Response) =>{
 
     
     if(product){
-        let productData:addProductDto = {name, price, stock, consumed: product.consumed}
+        let productData:addProductDto = {name, price, stock}
         const updatedProduct = Object.assign(product, productData)
         const updated = await productRepo.save(updatedProduct)
         res.json({success: true, updated, message: "تم تحديث المنتج بنجاح"})

@@ -21,8 +21,14 @@ const findDevice = async (req:Request, res:Response)=>{
 }
 
 const allDevices = async (req:Request, res:Response)=>{
-    const devices = await deviceRepo.find()
+    const devices = await deviceRepo
+    .createQueryBuilder('devices')
+    .leftJoinAndSelect('devices.session', 'session')
+    .innerJoinAndSelect('devices.type', 'type')
+    .getMany()
+
     const deviceTypes = await devTypeRepo.find()
+
     const availableDevices = devices.filter((device)=> device.status === false)
     const unavailableDevices = devices.filter((device)=> device.status === true)
 
@@ -31,17 +37,27 @@ const allDevices = async (req:Request, res:Response)=>{
 
 const addDevice = async(req: Request, res: Response)=>{
     const { name, type }= req.body;
-    const checkExists = await deviceRepo.findOne({where: {name}})
-    if(name && type){
-        if(!checkExists){
-            const device_type = await devTypeRepo.findOne({where: {id: type}}) 
-            if(device_type){
-                const deviceData:addDeviceDto = deviceRepo.create({name, type: device_type.id , status:false})
-                const device = await deviceRepo.save(deviceData)
-                res.json({device,  message: "تمت إضافة جهاز بنجاح", success: true})
-            }else res.json({message: "برجاء اعادة ادخال البيانات", success: false})
-        }else res.json({success: false, message: "هذا الجهاز موجود بالفعل"})
-    }else res.json({message:"برجاء ادخال كل البيانات", success: false})
+    const checkExists = await deviceRepo.exists({where: {name}})
+
+    if(!name || !type){
+        res.json({message:"برجاء ادخال كل البيانات", success: false})
+        return;
+    }
+
+    if(checkExists){
+        res.json({success: false, message: "هذا الجهاز موجود بالفعل"})
+        return;
+    }
+
+    const device_type = await devTypeRepo.findOne({where: {id: type}}) 
+    if(!device_type){
+        res.json({message: "برجاء اعادة ادخال البيانات", success: false})
+        return;
+    }
+
+    const device = deviceRepo.create({name, type: device_type , status:false})
+    await deviceRepo.save(device)
+    res.json({device, message: "تمت إضافة جهاز بنجاح", success: true})
 }
 
 const updateDevice = async (req: Request, res:Response) =>{

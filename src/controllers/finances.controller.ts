@@ -1,20 +1,19 @@
 import {Response, Request} from "express"
 import { myDataSource } from "../app-data-source";
-import { Finance } from "../entity/finances.entity";
 import { User } from '../entity/user.entity'
 import { Order } from '../entity/order.entity'
+import { Receipt } from "../entity/reciept.entity";
 
-const financeRepo = myDataSource.getRepository(Finance)
 const userRepo = myDataSource.getRepository(User)
 const orderRepo = myDataSource.getRepository(Order)
+const receiptRepo = myDataSource.getRepository(Receipt)
 
 const statisticFinances = async (req:Request, res:Response)=>{
     const { date, user } = req.params;
     let finances = [];
-    user=="all"? finances= await financeRepo.find() :finances = await
-    financeRepo.find({where:{cashier_id: user}});
-    
-    
+    user=="all"? 
+        finances= await receiptRepo.find({relations: {cashier: true}}) 
+        :finances = await receiptRepo.find({where:{cashier: {id: user}}, relations: {cashier: true}});    
     
     let lastDay = 0;
     let dailyFinances = 0;
@@ -43,84 +42,89 @@ const statisticFinances = async (req:Request, res:Response)=>{
     let productsRevenue = 0;
     let productsGrowthLoss = 0;
     let productsGrowthLossSign = false;
+
+    const timeOffset = new Date(date).getTimezoneOffset();
+
     const currentDay = new Date(date);
+    // const startOfToday = currentDay.setHours(0+timeOffset,0,0,0);
     const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getUTCDate() + 1);
-    tomorrow.setUTCHours(0, 0, 0, 0);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0+timeOffset, 0, 0, 0);
     
-    const currentDayFinances = finances.filter((finance) => new Date(new Date(finance.added_at).setHours(2, 0, 0, 0)).getDate() == currentDay.getDate() && currentDay.getMilliseconds() - new Date(new Date(finance.added_at).setHours(2, 0, 0, 0)).getMilliseconds() <= 24 * 60 * 60 * 1000);
-    const firstDayOfPreviousMonth = new Date(currentDay.getFullYear(), currentDay.getMonth() - 1, 1);
+    const currentDayFinances = finances.filter((finance) => new Date(finance.created_at).toDateString()===currentDay.toDateString()).reverse();
+
+    const firstDayOfPreviousMonth = new Date(currentDay.getFullYear(), currentDay.getMonth() - 1, 1)
     const firstDayOfCurrentMonth = new Date(currentDay.getFullYear(), currentDay.getMonth(), 1);
     const firstDayofNextMonth = new Date(currentDay.getFullYear(), currentDay.getMonth() + 1, 1);
     let nextSunday = Math.abs(7 - currentDay.getDay());
     
     finances?.map((finance)=> {
-        let addTime = new Date(new Date(finance.added_at).setHours(2,0,0,0))
+        let addTime = new Date(new Date(finance.created_at).setHours(0+timeOffset,0,0,0))
 
-        if (addTime.getDate() == currentDay.getDate() && currentDay.getMilliseconds() - addTime.getMilliseconds() <= 24*60*60*1000){
+        if (addTime.toLocaleTimeString(undefined, {year: '2-digit', month: '2-digit', day: '2-digit'})===currentDay.toLocaleTimeString(undefined, {year: '2-digit', month: '2-digit', day: '2-digit'})){
             if (finance.type == "deduction") {
-                dailyFinances -= finance.finances;
-                dailyDeduction += finance.finances;
+                dailyFinances -= finance.total;
+                dailyDeduction += finance.total;
             }
             else
-                dailyFinances += finance.finances;
+                dailyFinances += finance.total;
         }
         if (addTime < new Date(currentDay.getFullYear(), currentDay.getMonth(), currentDay.getDate())
             && addTime > new Date(currentDay.getFullYear(), currentDay.getMonth(), currentDay.getDate() - 1)) {
             if (finance.type == "deduction") {
-                lastDay -= finance.finances;
-                lastDayDeduction += finance.finances;
+                lastDay -= finance.total;
+                lastDayDeduction += finance.total;
             }
             else
-                lastDay += finance.finances;
+                lastDay += finance.total;
         }
         if (new Date(currentDay.getFullYear(), currentDay.getMonth(), currentDay.getDate() + nextSunday) > addTime
             && new Date(currentDay.getFullYear(), currentDay.getMonth(), currentDay.getDate() - currentDay.getDay()) < addTime) {
             if (finance.type == "deduction") {
-                weeklyFinances -= finance.finances;
+                weeklyFinances -= finance.total;
             }
             else
-                weeklyFinances += finance.finances;
+                weeklyFinances += finance.total;
         }
         if (currentDay.getMilliseconds() + (nextSunday * 24 * 60 * 60 * 1000) - (7 * 24 * 60 * 60 * 1000) > addTime.getMilliseconds()
             && currentDay.getMilliseconds() - (currentDay.getDay() * 24 * 60 * 60 * 1000) - (7 * 24 * 60 * 60 * 1000) < addTime.getMilliseconds()) {
             if (finance.type == "deduction") {
-                lastWeek -= finance.finances;
+                lastWeek -= finance.total;
             }
             else
-                lastWeek += finance.finances;
+                lastWeek += finance.total;
         }
         if (new Date(addTime) < firstDayofNextMonth
             && new Date(addTime) >= firstDayOfCurrentMonth) {
             if (finance.type == "deduction") {
-                monthlyFinances -= finance.finances;
-                monthlyDeduction += finance.finances;
+                monthlyFinances -= finance.total;
+                monthlyDeduction += finance.total;
             }
             else
-                monthlyFinances += finance.finances;
+                monthlyFinances += finance.total;
         }
         if (new Date(addTime) < firstDayOfCurrentMonth
             && new Date(addTime) > firstDayOfPreviousMonth) {
             if (finance.type == "deduction") {
-                lastMonth -= finance.finances;
-                lastMonthDeduction += finance.finances;
+                lastMonth -= finance.total;
+                lastMonthDeduction += finance.total;
             }
             else
-                lastMonth += finance.finances;
+                lastMonth += finance.total;
         }
         if (addTime.getFullYear() == currentDay.getFullYear()) {
             if (finance.type == "deduction") {
-                yearlyFinances -= finance.finances;
+                yearlyFinances -= finance.total;
             }
             else
-                yearlyFinances += finance.finances;
+                yearlyFinances += finance.total;
         }
         if (addTime.getFullYear() == currentDay.getFullYear() - 1) {
             if (finance.type == "deduction") {
-                lastYear -= finance.finances;
+                lastYear -= finance.total;
             }
             else
-                lastYear += finance.finances;
+                lastYear += finance.total;
         }
     });
     dailyGrowthLoss = Math.floor((Math.abs(dailyFinances - lastDay) / lastDay) * 100);
@@ -147,9 +151,9 @@ const statisticFinances = async (req:Request, res:Response)=>{
         let monthlyCost = 0;
         let lastMonthCost = 0;
         orders.map((order) => {
-            let monthDiff = new Date(order.time_ordered).getMonth() === new Date().getMonth();
-            let lastMonthDiff = new Date(order.time_ordered).getMonth() === new Date().getMonth() - 1;
-            let yearDiff = new Date(order.time_ordered).getFullYear() === new Date().getFullYear();
+            let monthDiff = new Date(order.ordered_at).getMonth() === new Date().getMonth();
+            let lastMonthDiff = new Date(order.ordered_at).getMonth() === new Date().getMonth() - 1;
+            let yearDiff = new Date(order.ordered_at).getFullYear() === new Date().getFullYear();
             if (monthDiff && yearDiff) {
                 monthlyCost += order.cost;
             }
@@ -164,17 +168,21 @@ const statisticFinances = async (req:Request, res:Response)=>{
     }
     
     res.json(finances? {currentDay, tomorrow, finances, currentDayFinances, yearlyFinances, lastYear, lastWeek, lastDay, lastMonth, weeklyFinances, dailyFinances, monthlyFinances, dailyDeduction, lastDayDeduction, monthlyDeduction, lastMonthDeduction, dailyGrowthLoss, dailyGrowthLossSign, weeklyGrowthLoss, weeklyGrowthLossSign, monthlyGrowthLoss, monthlyGrowthLossSign, yearlyGrowthLoss, yearlyGrowthLossSign, dailyDeductionGrowthLoss, dailyDeductionGrowthLossSign, monthlyDeductionGrowthLoss, monthlyDeductionGrowthLossSign, productsRevenue, productsGrowthLoss, productsGrowthLossSign }
-    : {message: "حدث خطأ"})
+    : {message: "حدث خطأ", success: false})
 }
 
 const addDeduction = async (req:Request, res:Response)=>{
   const { description, finances } = req.body;
-  const cashier = req.headers.username?.toString().split(' ')[1];
   const cashier_id = req.headers.user_id?.toString().split(' ')[1];
   if (description && finances) {
-      const newFinance = financeRepo.create({ finances: parseInt(finances), description, type: "deduction", cashier, cashier_id });
-      const finance = await financeRepo.save(newFinance);
-      finance && res.json({ message: "تمت إضافة خصم بنجاح", success: true });
+    const newFinance = receiptRepo.create({ 
+        total: parseInt(finances), 
+        description, 
+        type: "deduction", 
+        cashier: {id: cashier_id}
+    });
+    const finance = await receiptRepo.save(newFinance);
+    finance && res.json({ message: "تمت إضافة خصم بنجاح", success: true });
   }
   else
       res.json({ message: "برجاء ملء كل البيانات", success: false });
@@ -182,9 +190,9 @@ const addDeduction = async (req:Request, res:Response)=>{
 
 const removeDeduction = async (req:Request, res:Response)=>{
   const { id } = req.params;
-  const deduction = await financeRepo.findOne({ where: { id } });
+  const deduction = await receiptRepo.findOne({ where: { id } });
   if (deduction) {
-      const deletedFinance = await financeRepo.remove(deduction);
+      const deletedFinance = await receiptRepo.remove(deduction);
       deletedFinance && res.json({ message: "تم حذف الخصم بنجاح", success: true });
   }
   else
@@ -193,35 +201,43 @@ const removeDeduction = async (req:Request, res:Response)=>{
 
 const getUsersFinances = async (req:Request, res:Response)=>{
   const users = await userRepo.find();
-  const finances = await financeRepo.find();
+  const finances = await receiptRepo.find({relations: {cashier: true}});
   if (users && finances) {
-    const userFinancesArr:object[] = [];
+    const userFinancesArr:{
+        id: string;
+        username: string;
+        admin: boolean;
+        dailyFinances: number;
+        monthlyFinances: number;
+    }[] = [];
+
     users.map((user) => {
-      let userFinance = {
-        id: user.id,
-        username: user.username,
-        admin: user.admin,
-        dailyFinances: 0,
-        monthlyFinances: 0,
-      };
-      finances.filter((finance) => finance.cashier_id === user.id).map((finance) => {
+        let userFinance = {
+            id: user.id,
+            username: user.username,
+            admin: user.admin,
+            dailyFinances: 0,
+            monthlyFinances: 0,
+        };
+        
+      finances.filter((finance) => finance.cashier.id === user.id).map((finance) => {
         const firstDayOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
         const firstDayofNextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
-        let addTime = new Date(new Date(finance.added_at).setHours(2, 0, 0, 0));
+        let addTime = new Date(new Date(finance.created_at).setHours(2, 0, 0, 0));
         if (addTime.getDate() == new Date().getDate() && new Date().getMilliseconds() - addTime.getMilliseconds() <= 24 * 60 * 60 * 1000) {
           if (finance.type == "deduction") {
-              userFinance.dailyFinances -= finance.finances;
+              userFinance.dailyFinances -= finance.total;
           }
           else
-            userFinance.dailyFinances += finance.finances;
+            userFinance.dailyFinances += finance.total;
         }
         if (new Date(addTime) < firstDayofNextMonth
           && new Date(addTime) >= firstDayOfCurrentMonth) {
           if (finance.type == "deduction") {
-            userFinance.monthlyFinances -= finance.finances;
+            userFinance.monthlyFinances -= finance.total;
           }
           else
-            userFinance.monthlyFinances += finance.finances;
+            userFinance.monthlyFinances += finance.total;
         }
       });
       userFinancesArr.push(userFinance);
@@ -231,7 +247,7 @@ const getUsersFinances = async (req:Request, res:Response)=>{
 }
 
 const allFinances = async (req:Request, res:Response)=>{
-    const finances = await financeRepo.find();
+    const finances = await receiptRepo.find();
     res.json({ finances });
 }
 

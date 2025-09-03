@@ -21,14 +21,14 @@ const allOrders = async (req:Request, res:Response)=>{
 }
 
 const allOuterOrders =  async (req:Request, res:Response)=>{
-    const orders = await orderRepo.find({where:{device_session_id: IsNull()}})
+    const orders = await orderRepo.find({where:{session: IsNull()}})
     res.json({orders})
 }
 
 const sessionOrders = async (req:Request, res:Response)=>{
     const {id} = req.params
-    const orders = await orderRepo.find({where:{device_session_id: id}})
-    const timeOrders = await timeOrderRepo.find({where:{session_id: id}})
+    const orders = await orderRepo.find({where:{session: {id}}})
+    const timeOrders = await timeOrderRepo.find({where:{session: {id}}})
     const products = await productRepo.find()
     
     let arrangedOrders:{
@@ -43,7 +43,7 @@ const sessionOrders = async (req:Request, res:Response)=>{
             quantity:0
         }
 
-        const collected = orders.filter((order)=> order.product_id == product.id)
+        const collected = orders.filter((order)=> order.product.id == product.id)
         if(collected.length>0){
             entity.product = product.name
             collected.map((order)=> {
@@ -55,7 +55,7 @@ const sessionOrders = async (req:Request, res:Response)=>{
     })
 
     const timeOrdersWithString = timeOrders.map((order)=>{
-        let time = Math.floor((new Date(order.end_at).getTime() - new Date(order.start_at).getTime()) /1000)
+        let time = Math.floor((new Date(order.ended_at).getTime() - new Date(order.started_at).getTime()) /1000)
         const hours = Math.floor(time / (60*60))
         const minutes = Math.floor(time/(60)) % 60
         const seconds = time % 60
@@ -83,7 +83,7 @@ const addOrder = async(req: Request, res: Response)=>{
         return;
     }
 
-    const existingOrderedProd = await orderRepo.findOne({where:{product_id, device_session_id: sessionId}})
+    const existingOrderedProd = await orderRepo.findOne({where:{product: {id:product_id}, session: {id: sessionId}}})
     const cost = product.price * quantity;
     let savedOrder: any = {}
     if(existingOrderedProd){
@@ -96,8 +96,7 @@ const addOrder = async(req: Request, res: Response)=>{
     }
 
     const stock = product.stock - quantity;
-    const consumed = product.consumed + quantity;
-    const updateProductsData:addProductDto = Object.assign(product, {stock, consumed}) 
+    const updateProductsData:addProductDto = Object.assign(product, {stock}) 
     const updatedProducts = await productRepo.save(updateProductsData)
     res.json({success: true, savedOrder, updatedProducts, message: "تمت إضافةالطلب بنجاح"})
 }
@@ -105,18 +104,21 @@ const addOrder = async(req: Request, res: Response)=>{
 const deleteOrder = async(req: Request, res: Response)=>{
     const {id} = req.params
     const order = await orderRepo.findOne({where: {id}})
-    const product = await productRepo.findOne({where:{id: order?.product_id}})
-    if(order && product){
-        const deleted = await orderRepo.remove(order)
-        const stock = product.stock - order.quantity;
-        const consumed = product.consumed + order.quantity;
-        const updateProductsData:addProductDto = Object.assign(product, {stock, consumed}) 
-        const updatedProducts = await productRepo.save(updateProductsData)
-
-        res.json({success: true, deleted, updatedProducts, message: "تم حذف الطلب بنجاح"})
-    }else{
+    if(!order) {
         res.json({success: false, message: "هذا الطلب غير موجود"})
+        return;
     }
+
+    const product = await productRepo.findOne({where:{id: order?.product.id}})
+    await orderRepo.remove(order)
+
+    if(product){
+        const stock = product.stock - order.quantity;
+        const updateProductsData:addProductDto = Object.assign(product, {stock}) 
+        await productRepo.save(updateProductsData)
+    }
+
+    res.json({success: true, message: "تم حذف الطلب بنجاح"})
 }
 
 
