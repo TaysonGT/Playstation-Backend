@@ -30,50 +30,68 @@ const findSession = async (req: Request, res: Response) => {
 
 const changeDevice = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { toDevice } = req.body
+  const { destination } = req.body
 
-  const isBusy = await sessionRepo.findOne({ where: { device_id: toDevice } })
+  const isBusy = await sessionRepo.findOne({ where: { device_id: destination } })
   const session = await sessionRepo.findOne({ where: { id } })
+  
   if (session && session?.time_type == "time" && new Date(session?.end_at) < new Date()) {
     res.json({ message: " لقد انتهى وقت هذا الجهاز بالفعل", success: false })
-  } else {
-    if (session && !isBusy) {
-      const device = await deviceRepo.findOne({ where: { id: session.device_id } })
-      const nextDevice = await deviceRepo.findOne({ where: { id: toDevice } })
-      let cost = 0;
-      if (device && nextDevice) {
-        const start_at = Date.now()
-        const deviceType = await devTypeRepo.findOne({ where: { id: device.type } })
-
-        if (deviceType) {
-          if (session.play_type == "single") {
-            const timePrice = deviceType.single_price
-            cost = Math.ceil(((start_at - new Date(session.start_at).getTime()) / (1000 * 60 * 60)) * timePrice)
-          } else {
-            const timePrice = deviceType.multi_price
-            cost = Math.ceil(((start_at - new Date(session.start_at).getTime()) / (1000 * 60 * 60)) * timePrice)
-          }
-        }
-
-
-        const timeData: timeDto = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, start_at: session.start_at }
-        const time_order = timeOrderRepo.create(timeData)
-        const savedTimeOrder = await timeOrderRepo.save(time_order);
-
-        const prevDeviceData = Object.assign(device, { ...device, status: false })
-        const newDeviceData = Object.assign(nextDevice, { ...nextDevice, status: true })
-
-        deviceRepo.save(prevDeviceData)
-        deviceRepo.save(newDeviceData)
-
-        const newSession = Object.assign(session, { ...session, start_at, device_id: toDevice })
-        const updatedSession = await sessionRepo.save(newSession)
-
-        savedTimeOrder && updatedSession ? res.json({ message: "تم نقل الحساب لجهاز اخر", success: true })
-          : res.json({ message: "حدث خطأ", success: false })
-      }
-    } else res.json({ message: "هذا الجهاز مشغول حاليا", success: false })
+    return
   }
+
+  if(isBusy) {
+    res.json({ message: "هذا الجهاز مشغول حاليا", success: false })
+    return;
+  }
+
+  if (!session) {
+    res.json({ message: "لم يتم العثور على الجلسة", success: false })
+    return;
+  }
+
+  const device = await deviceRepo.findOne({ where: { id: session.device_id } })
+  const nextDevice = await deviceRepo.findOne({ where: { id: destination } })
+
+  let cost = 0;
+
+  if (!device || !nextDevice) {
+    res.json({ message: "حدث خطأ", success: false })
+    return;
+  }
+
+  const start_at = Date.now()
+  const deviceType = await devTypeRepo.findOne({ where: { id: device.type } })
+  
+  if (!deviceType) {
+    res.json({ message: "لم يتم العثور على نوع الجهاز", success: false })
+    return;
+  }
+
+  if (session.play_type == "single") {
+    const timePrice = deviceType.single_price
+    cost = Math.ceil(((start_at - new Date(session.start_at).getTime()) / (1000 * 60 * 60)) * timePrice)
+  } else {
+    const timePrice = deviceType.multi_price
+    cost = Math.ceil(((start_at - new Date(session.start_at).getTime()) / (1000 * 60 * 60)) * timePrice)
+  }
+
+  const timeData: timeDto = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, start_at: session.start_at }
+  const time_order = timeOrderRepo.create(timeData)
+  const savedTimeOrder = await timeOrderRepo.save(time_order);
+
+  const prevDeviceData = Object.assign(device, { ...device, status: false })
+  const newDeviceData = Object.assign(nextDevice, { ...nextDevice, status: true })
+
+  deviceRepo.save(prevDeviceData)
+  deviceRepo.save(newDeviceData)
+
+  const newSession = Object.assign(session, { ...session, start_at, device_id: destination })
+  const updatedSession = await sessionRepo.save(newSession)
+
+  savedTimeOrder && updatedSession ? 
+    res.json({ message: "تم نقل الحساب لجهاز اخر", success: true })
+    : res.json({ message: "حدث خطأ", success: false })
 }
 
 const changePlayType = async (req: Request, res: Response) => {
