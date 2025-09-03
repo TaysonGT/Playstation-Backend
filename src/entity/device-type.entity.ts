@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm";
+import { Device } from "./device.entity";
 
 @Entity('device_type')
 export class DeviceType{
@@ -13,4 +14,7 @@ export class DeviceType{
 
     @Column()
     multi_price: number;
+
+    @OneToMany(()=>Device, (device)=>device.type)
+    devices: Device[];
 } 

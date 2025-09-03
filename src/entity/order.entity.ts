@@ -1,4 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn} from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne} from "typeorm";
+import { Session } from "./session.entity";
+import { Product } from "./product.entity";
+import { Receipt } from "./reciept.entity";
 
 @Entity('orders')
 export class Order {
@@ -6,23 +9,20 @@ export class Order {
     id: string;
 
     @Column()
-    product_id: string;
-    
-    @Column()
-    product_name: string;
-    
-    @Column()
     quantity: number;
     
     @Column()
     cost:number
     
-    @Column({nullable: true})
-    device_session_id?: string;
+    @ManyToOne(()=>Product, (product)=>product.orders)
+    product: Product;
     
-    @Column({nullable: true})
-    device_name?: string;
+    @ManyToOne(()=>Session, (session)=>session.orders)
+    session?: Session;
+
+    @ManyToOne(()=>Receipt, (receipt)=>receipt.orders)
+    receipt: Receipt;
 
     @CreateDateColumn()
-    time_ordered: string;
+    ordered_at: string;
 }

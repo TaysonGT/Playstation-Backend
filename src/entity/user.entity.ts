@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm";
+import { Receipt } from "./reciept.entity";
 
 @Entity('users')
 export class User {
@@ -13,4 +14,7 @@ export class User {
 
     @Column({default: false})
     admin: boolean;
+
+    @OneToMany(()=>Receipt, (receipt)=> receipt.cashier)
+    receipts: Receipt[];
 }

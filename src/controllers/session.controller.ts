@@ -1,26 +1,20 @@
 import { Response, Request } from "express"
 import { myDataSource } from "../app-data-source";
-
 import { addDeviceDto } from "../dto/add-device.dto";
-import { addFinanceDto } from "../dto/add-finances.dto";
 import { timeDto } from "../dto/time-order.dto";
-
 import { Device } from "../entity/device.entity";
 import { Order } from "../entity/order.entity";
-import { Finance } from '../entity/finances.entity';
 import { TimeOrder } from "../entity/time-order.entity";
 import { Session } from '../entity/session.entity';
-import { DeviceType } from "../entity/device-type.entity";
-import { TimeReceipt } from '../entity/time-receipt.entity';
+import { Receipt } from "../entity/reciept.entity";
+import { User } from "../entity/user.entity";
 
 const sessionRepo = myDataSource.getRepository(Session)
 const deviceRepo = myDataSource.getRepository(Device)
 const orderRepo = myDataSource.getRepository(Order)
-const financeRepo = myDataSource.getRepository(Finance)
+const userRepo = myDataSource.getRepository(User)
 const timeOrderRepo = myDataSource.getRepository(TimeOrder)
-const devTypeRepo = myDataSource.getRepository(DeviceType)
-const TimeReceiptRepo = myDataSource.getRepository(TimeReceipt)
-
+const receiptRepo = myDataSource.getRepository(Receipt)
 
 const findSession = async (req: Request, res: Response) => {
   const { id } = req.params
@@ -32,10 +26,25 @@ const changeDevice = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { destination } = req.body
 
-  const isBusy = await sessionRepo.findOne({ where: { device_id: destination } })
-  const session = await sessionRepo.findOne({ where: { id } })
+  const isBusy = await sessionRepo.findOne({ where: { device: {id: destination} } })
+  const session = await sessionRepo
+  .createQueryBuilder('session')
+  .innerJoinAndSelect('session.device', 'device')
+  .innerJoinAndSelect('device.type', 'type')
+  .where('session.id = :id', {id})
+  .getOne()  
   
-  if (session && session?.time_type == "time" && new Date(session?.end_at) < new Date()) {
+  if (!session) {
+    res.json({ message: "لم يتم العثور على الجلسة", success: false })
+    return;
+  }
+
+  if (!session.device) {
+    res.json({ success: false, message: "مش فاهم حاجة" })
+    return;
+  }
+ 
+  if (session && session?.time_type == "time" && new Date(session?.ended_at) < new Date()) {
     res.json({ message: " لقد انتهى وقت هذا الجهاز بالفعل", success: false })
     return
   }
@@ -45,48 +54,37 @@ const changeDevice = async (req: Request, res: Response) => {
     return;
   }
 
-  if (!session) {
-    res.json({ message: "لم يتم العثور على الجلسة", success: false })
-    return;
-  }
 
-  const device = await deviceRepo.findOne({ where: { id: session.device_id } })
   const nextDevice = await deviceRepo.findOne({ where: { id: destination } })
 
   let cost = 0;
 
-  if (!device || !nextDevice) {
+  if (!nextDevice) {
     res.json({ message: "حدث خطأ", success: false })
     return;
   }
 
-  const start_at = Date.now()
-  const deviceType = await devTypeRepo.findOne({ where: { id: device.type } })
-  
-  if (!deviceType) {
-    res.json({ message: "لم يتم العثور على نوع الجهاز", success: false })
-    return;
-  }
+  const started_at = Date.now()
 
   if (session.play_type == "single") {
-    const timePrice = deviceType.single_price
-    cost = Math.ceil(((start_at - new Date(session.start_at).getTime()) / (1000 * 60 * 60)) * timePrice)
+    const timePrice = session.device.type.single_price
+    cost = Math.ceil(((started_at - new Date(session.started_at).getTime()) / (1000 * 60 * 60)) * timePrice)
   } else {
-    const timePrice = deviceType.multi_price
-    cost = Math.ceil(((start_at - new Date(session.start_at).getTime()) / (1000 * 60 * 60)) * timePrice)
+    const timePrice = session.device.type.multi_price
+    cost = Math.ceil(((started_at - new Date(session.started_at).getTime()) / (1000 * 60 * 60)) * timePrice)
   }
 
-  const timeData: timeDto = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, start_at: session.start_at }
+  const timeData: timeDto = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, started_at: session.started_at }
   const time_order = timeOrderRepo.create(timeData)
   const savedTimeOrder = await timeOrderRepo.save(time_order);
 
-  const prevDeviceData = Object.assign(device, { ...device, status: false })
+  const prevDeviceData = Object.assign(session.device, { ...session.device, status: false })
   const newDeviceData = Object.assign(nextDevice, { ...nextDevice, status: true })
 
   deviceRepo.save(prevDeviceData)
   deviceRepo.save(newDeviceData)
 
-  const newSession = Object.assign(session, { ...session, start_at, device_id: destination })
+  const newSession = Object.assign(session, { ...session, started_at, device_id: destination })
   const updatedSession = await sessionRepo.save(newSession)
 
   savedTimeOrder && updatedSession ? 
@@ -98,38 +96,49 @@ const changePlayType = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { play_type } = req.body
 
-  const session = await sessionRepo.findOne({ where: { id } })
-  if (session && session.time_type == "time" && new Date(session.end_at) < new Date() && play_type) {
+  const session = await sessionRepo
+  .createQueryBuilder('session')
+  .innerJoinAndSelect('session.device', 'device')
+  .innerJoinAndSelect('device.type', 'type')
+  .where('session.id = :id', {id})
+  .getOne()  
+
+  if (!session) {
+    res.json({ message: "هذه الجلسة غير موجودة", success: false })
+    return;
+  }
+  
+  if (!session.device) {
+    res.json({ success: false, message: "مش فاهم حاجة" })
+    return;
+  }
+  
+  if (session.time_type == "time" && new Date(session.ended_at) < new Date() && play_type) {
     res.json({ message: " لقد انتهى وقت هذا الجهاز بالفعل", success: false })
+    return;
+  }
+  
+  let cost = 0;
+  const started_at = Date.now()
+  const timeDiff = (started_at - new Date(session.started_at).getTime()) / (1000 * 60 * 60)
+
+  if (session.play_type == "single") {
+    const timePrice = session.device.type.single_price
+    cost = Math.ceil(timeDiff * timePrice)
   } else {
-    let cost = 0;
-    if (session) {
-      const device = await deviceRepo.findOne({ where: { id: session.device_id } })
-      const start_at = Date.now()
-      const deviceType = await devTypeRepo.findOne({ where: { id: device?.type } })
-      const timeDiff = (start_at - new Date(session.start_at).getTime()) / (1000 * 60 * 60)
-      if (deviceType) {
-        if (session.play_type == "single") {
-          const timePrice = deviceType.single_price
-          cost = Math.ceil(timeDiff * timePrice)
-        } else {
-          const timePrice = deviceType.multi_price
-          cost = Math.ceil(timeDiff * timePrice)
-        }
-      }
-
-      const timeData: timeDto = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, start_at: session.start_at }
-      const time_order = timeOrderRepo.create(timeData)
-      const savedTimeOrder = await timeOrderRepo.save(time_order);
-
-      const newSession = Object.assign(session, { ...session, play_type, start_at })
-      const updatedSession = await sessionRepo.save(newSession)
-
-      savedTimeOrder && updatedSession ? res.json({ message: "تم تغيير نوع اللعب", success: true, updatedSession })
-        : res.json({ message: "حدث خطأ", success: false })
-    }
+    const timePrice = session.device.type.multi_price
+    cost = Math.ceil(timeDiff * timePrice)
   }
 
+  const timeData: timeDto = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, started_at: session.started_at }
+  const time_order = timeOrderRepo.create(timeData)
+  const savedTimeOrder = await timeOrderRepo.save(time_order);
+
+  const newSession = Object.assign(session, { ...session, play_type, started_at })
+  const updatedSession = await sessionRepo.save(newSession)
+
+  savedTimeOrder && updatedSession ? res.json({ message: "تم تغيير نوع اللعب", success: true, updatedSession })
+    : res.json({ message: "حدث خطأ", success: false })
 }
 
 const allSessions = async (req: Request, res: Response) => {
@@ -141,106 +150,129 @@ const addSession = async (req: Request, res: Response) => {
   const { play_type, time_type, end_time } = req.body;
   const { id } = req.params
   const device = await deviceRepo.findOne({ where: { id } })
-  const checkExists = await sessionRepo.findOne({ where: { device_id: id } })
-  if (!checkExists) {
-    if (device) {
-      if (play_type && time_type) {
-        const updateDeviceData: addDeviceDto = Object.assign({ ...device, status: true })
-        const updated = await deviceRepo.save(updateDeviceData)
-        const sessionData = { device_id: device.id, end_at: end_time, time_type, play_type }
-        const session = sessionRepo.create(sessionData)
-        const created = await sessionRepo.save(session)
-        res.json({ success: true, created, updated, message: "تم بدأ الجهاز بنجاح" })
-      } else res.json({ success: false, message: "حدث خطأ" })
-    } else res.json({ message: "هذا الجهاز غير موجود" })
-  } else res.json({ message: "هذه الجلسة بدأت بالفعل", succes: false, warning: true })
+  const checkExists = await sessionRepo.exists({ where: { device_id: id, status: 'running' } })
 
+  if (checkExists) {
+    res.json({ message: "هذه الجلسة بدأت بالفعل", succes: false, warning: true })
+    return
+  }
+
+  if (!device) { 
+    res.json({ message: "هذا الجهاز غير موجود" })
+    return;
+  }
+
+  if (!play_type || !time_type) {
+    res.json({ success: false, message: "برجاء ملء جميع البيانات" })
+  }
+
+  const updateDeviceData: addDeviceDto = Object.assign({ ...device, status: true })
+  const updated = await deviceRepo.save(updateDeviceData)
+  const session = sessionRepo.create({
+    device, 
+    ...(time_type==='time')&&{ended_at: end_time},
+    time_type,
+    play_type
+  })
+  
+  await sessionRepo.save(session)
+  res.json({ success: true, session, updated, message: "تم بدأ الجهاز بنجاح" })
 }
 
 const endSession = async (req: Request, res: Response) => {
-  const cashier = req.headers.username?.toString().split(' ')[1];
   const cashier_id = req.headers.user_id?.toString().split(' ')[1];
   const { id } = req.params
 
   let deviceStatus = false
 
+  const session = await sessionRepo
+  .createQueryBuilder('session')
+  .innerJoinAndSelect('session.device', 'device')
+  .innerJoinAndSelect('device.type', 'type')
+  .where('session.id = :id', {id})
+  .getOne()
 
-  const session = await sessionRepo.findOne({ where: { id } })
-  if (session && cashier && cashier_id) {
+  if (!session) {
+    res.json({ success: false, message: "الجلسة غير موجودة" })
+    return;
+  }
+  
+  if (!session.device) {
+    res.json({ success: false, message: "مش فاهم حاجة" })
+    return;
+  }
+  
+  const cashier = await userRepo.findOne({ where: { id: cashier_id } })
+  
+  if (!cashier) {
+    res.json({ success: false, message: "مستخدم غير موجود" })
+    return;
+  }
 
-    const device = await deviceRepo.findOne({ where: { id: session.device_id } })
-    if (device) {
-      // UPDATE DEVICE STATE
-      const deviceData: addDeviceDto = Object.assign({ ...device, name: device.name, type: device.type, status: deviceStatus })
-      const updatedDevice = await deviceRepo.save(deviceData)
-      let timeDiff = null;
+  // UPDATE DEVICE STATE
+  const deviceData: addDeviceDto = Object.assign({ ...session.device, name: session.device.name, type: session.device.type, status: deviceStatus })
+  const updatedDevice = await deviceRepo.save(deviceData)
+  let timeDiff = null;
 
-      // WRAPPING FINAL TIME ORDER BEFORE CALCULATING ALL TIME ORDERS
-      if (session.time_type == "open") {
-        timeDiff = (new Date().getTime() - new Date(session.start_at).getTime()) / (1000 * 60 * 60)
-      } else {
-        new Date(session.end_at).getTime() > Date.now() ?
-          timeDiff = (Date.now() - new Date(session.start_at).getTime()) / (1000 * 60 * 60)
-          : timeDiff = (new Date(session.end_at).getTime() - new Date(session.start_at).getTime()) / (1000 * 60 * 60)
-      }
-      let finalOrderCost = null
-      let finalTimeOrder = null
+  // WRAPPING FINAL TIME ORDER BEFORE CALCULATING ALL TIME ORDERS
+  if (session.time_type == "open") {
+    timeDiff = (new Date().getTime() - new Date(session.started_at).getTime()) / (1000 * 60 * 60)
+  } else {
+    new Date(session.ended_at).getTime() > Date.now() ?
+      timeDiff = (Date.now() - new Date(session.started_at).getTime()) / (1000 * 60 * 60)
+      : timeDiff = (new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / (1000 * 60 * 60)
+  }
+  let finalOrderCost = null
+  let finalTimeOrder = null
 
-      const deviceType = await devTypeRepo.findOne({ where: { id: device.type } })
+  if (session.play_type == "single") {
+    finalOrderCost = timeDiff * session.device.type.single_price
+  } else {
+    finalOrderCost = timeDiff * session.device.type.multi_price
+  }
 
-      if (deviceType) {
-        if (session.play_type == "single") {
-          finalOrderCost = timeDiff * deviceType.single_price
-        } else {
-          finalOrderCost = timeDiff * deviceType.multi_price
-        }
-      }
+  if (finalOrderCost) {
+    const createOrder = timeOrderRepo.create({ session, started_at: session.started_at, play_type: session.play_type, cost: Math.ceil(finalOrderCost) })
+    finalTimeOrder = await timeOrderRepo.save(createOrder)
+  }
 
-      if (finalOrderCost) {
-        const createOrder = timeOrderRepo.create({ session_id: session.id, start_at: session.start_at, play_type: session.play_type, cost: Math.ceil(finalOrderCost) })
-        finalTimeOrder = await timeOrderRepo.save(createOrder)
-      }
+  //  COUNTING ORDERS AND CALCULATING COSTS
+  const orders = await orderRepo.find({ where: { session } })
+  const time_orders = await timeOrderRepo.find({ where: { session } })
+  let total = 0;
 
+  let ordersCount = 0
+  if (orders.length > 0) {
+    orders.map((order) => {
+      total += order.cost
+      ordersCount += order.quantity;
+    })
+  }
 
-      //  COUNTING ORDERS AND CALCULATING COSTS
-      const orders = await orderRepo.find({ where: { device_session_id: session.id } })
-      const timeOrders = await timeOrderRepo.find({ where: { session_id: session.id } })
-      let total = 0;
+  if (time_orders.length > 0 && finalTimeOrder) {
+    time_orders.map((timeOrder) => total += timeOrder.cost)
+  }
 
-      let ordersCount = 0
-      if (orders.length > 0) {
-        orders.map((order) => {
-          total += order.cost
-          ordersCount += order.quantity;
-        })
-      }
+  // TIME ORDERS RECEIPT
+  const receiptData = receiptRepo.create({
+    cashier, 
+    total,
+    orders,
+    time_orders,
+    type: 'session'
+  })
 
-      if (timeOrders.length > 0 && finalTimeOrder) {
-        timeOrders.map((timeOrder) => total += timeOrder.cost)
-      }
+  session.orders = []
+  session.time_orders = []
+  session.device = undefined;
+  
+  // SESSION DELETED
+  await receiptRepo.save(receiptData);
+  await sessionRepo.save(session)
+  await sessionRepo.remove(session)
 
-
-      // FINANCES OPERATIONS
-      let description = `تم انهاء جهاز: ${device.name} وبعدد ${ordersCount} من الطلبات بإجمالي ${total}ج`;
-      const financeData: addFinanceDto = { finances: total, type: "Device",
-      description, cashier, cashier_id }
-      const finance = financeRepo.create(financeData)
-      const addedFinance = await financeRepo.save(finance)
-
-      // TIME ORDERS RECEIPT
-      const timeReceiptData = TimeReceiptRepo.create({ orders:
-      JSON.stringify(orders), time_orders: JSON.stringify(timeOrders), total,
-      cashier, cashier_id, session_id: session.id })
-      const timeReceipt = await TimeReceiptRepo.save(timeReceiptData);
-
-      // SESSION DELETED
-      const deletedSession = await sessionRepo.remove(session)
-
-      // RESPONSE
-      res.json({ success: true, deletedSession, updatedDevice, addedFinance, timeReceipt, message: "تم ايقاف الجهاز بنجاح" })
-
-    } else res.json({ success: false, message: "حدث خطأ" })
-  } else res.json({ success: false, message: "حدث خطأ" })
+  // RESPONSE
+  res.json({ success: true, updatedDevice, message: "تم ايقاف الجهاز بنجاح" })
 }
 
 

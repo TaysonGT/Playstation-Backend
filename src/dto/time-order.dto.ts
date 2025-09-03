@@ -3,5 +3,5 @@ export class timeDto {
     play_type: string;
     time_type:string;
     cost: number;
-    start_at: string;
+    started_at: string;
 }

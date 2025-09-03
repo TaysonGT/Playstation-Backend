@@ -1,5 +1,7 @@
+import { DeviceType } from "../entity/device-type.entity";
+
 export class addDeviceDto {
         name: string;
-        type: string;
+        type: DeviceType;
         status: boolean;
 }
