@@ -21,5 +21,5 @@ export class Device{
     receipts: Receipt[];
 
     @OneToOne(()=>Session, (session)=> session.device)
-    session: Session;
+    session?: Session;
 } 

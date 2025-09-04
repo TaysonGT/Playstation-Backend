@@ -3,7 +3,6 @@ import { myDataSource } from "../app-data-source";
 import { addDeviceDto } from "../dto/add-device.dto";
 import { timeDto } from "../dto/time-order.dto";
 import { Device } from "../entity/device.entity";
-import { Order } from "../entity/order.entity";
 import { TimeOrder } from "../entity/time-order.entity";
 import { Session } from '../entity/session.entity';
 import { Receipt } from "../entity/reciept.entity";
@@ -11,7 +10,6 @@ import { User } from "../entity/user.entity";
 
 const sessionRepo = myDataSource.getRepository(Session)
 const deviceRepo = myDataSource.getRepository(Device)
-const orderRepo = myDataSource.getRepository(Order)
 const userRepo = myDataSource.getRepository(User)
 const timeOrderRepo = myDataSource.getRepository(TimeOrder)
 const receiptRepo = myDataSource.getRepository(Receipt)
@@ -54,7 +52,6 @@ const changeDevice = async (req: Request, res: Response) => {
     return;
   }
 
-
   const nextDevice = await deviceRepo.findOne({ where: { id: destination } })
 
   let cost = 0;
@@ -73,23 +70,30 @@ const changeDevice = async (req: Request, res: Response) => {
     const timePrice = session.device.type.multi_price
     cost = Math.ceil(((started_at - new Date(session.started_at).getTime()) / (1000 * 60 * 60)) * timePrice)
   }
-
-  const timeData: timeDto = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, started_at: session.started_at }
-  const time_order = timeOrderRepo.create(timeData)
-  const savedTimeOrder = await timeOrderRepo.save(time_order);
-
-  const prevDeviceData = Object.assign(session.device, { ...session.device, status: false })
-  const newDeviceData = Object.assign(nextDevice, { ...nextDevice, status: true })
-
-  deviceRepo.save(prevDeviceData)
-  deviceRepo.save(newDeviceData)
-
-  const newSession = Object.assign(session, { ...session, started_at, device_id: destination })
-  const updatedSession = await sessionRepo.save(newSession)
-
-  savedTimeOrder && updatedSession ? 
+  try{
+    const timeData: timeDto = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, started_at: new Date(session.started_at) }
+    const time_order = timeOrderRepo.create(timeData)
+    await timeOrderRepo.save(time_order);
+  
+    session.device.status = false
+    session.device.session = undefined
+  
+    await deviceRepo.save(session.device)
+    
+    nextDevice.status = true
+    
+    await deviceRepo.save(nextDevice)
+    
+    session.device = nextDevice;
+    session.started_at = new Date(started_at) 
+  
+    await sessionRepo.save(session)
+  
+    
     res.json({ message: "تم نقل الحساب لجهاز اخر", success: true })
-    : res.json({ message: "حدث خطأ", success: false })
+  }catch(error){
+    res.json({ message: error.message, success: false })
+  }
 }
 
 const changePlayType = async (req: Request, res: Response) => {
@@ -189,6 +193,8 @@ const endSession = async (req: Request, res: Response) => {
   .createQueryBuilder('session')
   .innerJoinAndSelect('session.device', 'device')
   .innerJoinAndSelect('device.type', 'type')
+  .leftJoinAndSelect('session.orders', 'orders')
+  .leftJoinAndSelect('session.time_orders', 'time_orders')
   .where('session.id = :id', {id})
   .getOne()
 
@@ -222,52 +228,41 @@ const endSession = async (req: Request, res: Response) => {
       timeDiff = (Date.now() - new Date(session.started_at).getTime()) / (1000 * 60 * 60)
       : timeDiff = (new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / (1000 * 60 * 60)
   }
-  let finalOrderCost = null
-  let finalTimeOrder = null
 
-  if (session.play_type == "single") {
-    finalOrderCost = timeDiff * session.device.type.single_price
-  } else {
-    finalOrderCost = timeDiff * session.device.type.multi_price
-  }
+  let finalOrderCost = session.play_type === "single"? timeDiff * session.device.type.single_price: timeDiff * session.device.type.multi_price
 
-  if (finalOrderCost) {
-    const createOrder = timeOrderRepo.create({ session, started_at: session.started_at, play_type: session.play_type, cost: Math.ceil(finalOrderCost) })
-    finalTimeOrder = await timeOrderRepo.save(createOrder)
-  }
+  const finalTimeOrder = timeOrderRepo.create({ session, started_at: session.started_at, play_type: session.play_type, cost: Math.ceil(finalOrderCost) })
+  await timeOrderRepo.save(finalTimeOrder)
+
+  session.time_orders.push(finalTimeOrder)
 
   //  COUNTING ORDERS AND CALCULATING COSTS
-  const orders = await orderRepo.find({ where: { session } })
-  const time_orders = await timeOrderRepo.find({ where: { session } })
   let total = 0;
 
-  let ordersCount = 0
-  if (orders.length > 0) {
-    orders.map((order) => {
-      total += order.cost
-      ordersCount += order.quantity;
-    })
-  }
+  session.orders?.map((order) => {
+    total += order.cost
+  })
 
-  if (time_orders.length > 0 && finalTimeOrder) {
-    time_orders.map((timeOrder) => total += timeOrder.cost)
-  }
+  session.time_orders?.map((timeOrder) => total += timeOrder.cost)
 
   // TIME ORDERS RECEIPT
   const receiptData = receiptRepo.create({
     cashier, 
     total,
-    orders,
-    time_orders,
+    orders: session.orders,
+    time_orders: session.time_orders,
     type: 'session'
   })
+
+  await receiptRepo.save(receiptData);
+
+  console.log({receiptData})
 
   session.orders = []
   session.time_orders = []
   session.device = undefined;
   
   // SESSION DELETED
-  await receiptRepo.save(receiptData);
   await sessionRepo.save(session)
   await sessionRepo.remove(session)
 

@@ -62,7 +62,13 @@ const createOuterReceipt = async (req:Request, res:Response)=>{
 }
 
 const allOuterReceipts = async (req:Request, res:Response)=>{
-    const receipts = await recieptRepo.find()
+    const receipts = await recieptRepo
+    .createQueryBuilder('receipts')
+    .leftJoinAndSelect('receipts.cashier', 'cashier')
+    // .limit(20)
+    .getMany()
+
+    // .find()
     res.json({receipts})
 }
 
@@ -73,7 +79,11 @@ const findOuterReceipt = async (req:Request, res:Response)=>{
 }
 
 const allSessionReceipts = async (req:Request, res:Response)=>{
-    const timeReceipts = await recieptRepo.find({where: {type: "session"}})
+    const timeReceipts = await recieptRepo.find({
+      where: {type: "session"}, 
+      relations: {device: true, time_orders: true, orders:true, cashier: true}
+    })
+    
     res.json({timeReceipts})
 }
 
