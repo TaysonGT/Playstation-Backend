@@ -24,7 +24,7 @@ export class Session {
     status: 'ended'|'running';
 
     @CreateDateColumn()
-    started_at: string;
+    started_at: Date;
 
     @OneToOne(()=> Device, (device)=> device.session)
     @JoinColumn({name: 'device_id'})
@@ -34,5 +34,5 @@ export class Session {
     orders: Order[];
 
     @OneToMany(()=>TimeOrder, order => order.session)
-    time_orders: Order[];
+    time_orders: TimeOrder[];
 } 

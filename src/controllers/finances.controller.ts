@@ -10,11 +10,16 @@ const receiptRepo = myDataSource.getRepository(Receipt)
 
 const statisticFinances = async (req:Request, res:Response)=>{
     const { date, user } = req.params;
-    let finances = [];
-    user=="all"? 
-        finances= await receiptRepo.find({relations: {cashier: true}}) 
-        :finances = await receiptRepo.find({where:{cashier: {id: user}}, relations: {cashier: true}});    
+    const query = receiptRepo
+    .createQueryBuilder('receipts')
+    .leftJoinAndSelect('receipts.cashier', 'cashier')
+    .leftJoinAndSelect('receipts.time_orders', 'time_orders')
+    .leftJoinAndSelect('receipts.orders', 'orders')
     
+    user!=='all'&& query.where('cashier.id = :id', {id: user})
+
+    const finances = await query.getMany()
+
     let lastDay = 0;
     let dailyFinances = 0;
     let dailyGrowthLoss = 0;
