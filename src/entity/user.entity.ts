@@ -13,7 +13,7 @@ export class User {
     password: string;
 
     @Column({default: false})
-    admin: boolean;
+    role: 'admin'|'employee';
 
     @OneToMany(()=>Receipt, (receipt)=> receipt.cashier)
     receipts: Receipt[];

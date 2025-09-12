@@ -1,7 +1,6 @@
 import express from 'express';
 import { myDataSource } from './app-data-source';
 import cors from 'cors';
-import {addUser, userLogin, checkUsers} from './controllers/users.controller';
 import { auth } from './middleware/user.auth';
 import devicesRouter from './routes/devices.router';
 import ordersRouter from './routes/orders.router';
@@ -14,6 +13,7 @@ import productsRouter from './routes/products.router';
 import deviceTypesRouter from './routes/device-types.router';
 import configsRouter from './routes/main-configs.router';
 import receiptsRouter from './routes/receipts.router';
+import authRouter from './routes/auth.router';
 
 // Initializing App
 const app = express()
@@ -34,9 +34,7 @@ app.use(express.urlencoded({
 }))
 
 // Routes
-app.post('/login',userLogin)
-app.post('/firstuser', addUser )
-app.get('/firstuser', checkUsers )
+app.use('/auth', authRouter)
 app.use(auth)
 app.use('/users', userRouter)
 app.use('/orders', ordersRouter)
