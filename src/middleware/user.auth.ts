@@ -18,5 +18,5 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
 export const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
   const id = req.headers.user_id?.toString().split(' ')[1]
   const user = await userRepo.findOne({where: {id}})
-  user&& !user.admin? res.json({success: false,  message: "هذا المستخدم لا يملك الصلاحيات لفعل هذا الأمر"}) : next()
+  user&& user.role !=='admin'? res.json({success: false,  message: "هذا المستخدم لا يملك الصلاحيات لفعل هذا الأمر"}) : next()
 }

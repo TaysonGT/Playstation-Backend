@@ -211,7 +211,7 @@ const getUsersFinances = async (req:Request, res:Response)=>{
     const userFinancesArr:{
         id: string;
         username: string;
-        admin: boolean;
+        role: 'admin'|'employee';
         dailyFinances: number;
         monthlyFinances: number;
     }[] = [];
@@ -220,7 +220,7 @@ const getUsersFinances = async (req:Request, res:Response)=>{
         let userFinance = {
             id: user.id,
             username: user.username,
-            admin: user.admin,
+            role: user.role,
             dailyFinances: 0,
             monthlyFinances: 0,
         };

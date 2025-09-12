@@ -7,7 +7,7 @@ import { addUserDto } from "../dto/add-user.dto";
 const userRepo = myDataSource.getRepository(User)
 
 const addUser = async (req: Request, res: Response) => {
-  const { username, password, admin } = req.body;
+  const { username, password, role } = req.body;
   if (!(username && password)) {
     res.json({ message: "برجاء ادخال جميع البيانات", success: false });
     return;
@@ -33,17 +33,14 @@ const addUser = async (req: Request, res: Response) => {
   
   const users = await userRepo.find();
 
-  const userData = { username: trimmedUser, password: trimmedPass, admin: users.length===0? true : admin };
-  const user = userRepo.create(userData);
+  const user = userRepo.create({ username: trimmedUser, password: trimmedPass, role: users.length===0? 'admin' : role });
   const results = await userRepo.save(user);
   const token = jwt.sign({ user_id: user.id, username: user.username }, "tayson", { expiresIn: '8h' })
-  
+
   res.json({ 
     results, message: "تمت إضافة المستخدم بنجاح", 
     success: true,
     token,
-    username: user.username, 
-    user_id: user.id, 
     expDate: Date.now() + 8 * 60 * 60 * 1000 
   })
 }
@@ -69,7 +66,7 @@ const deleteUser = async (req: Request, res: Response) => {
 }
 
 const updateUser = async (req: Request, res: Response) => {
-  const { id, username, password, admin } = req.body as addUserDto;
+  const { id, username, password, role } = req.body as addUserDto;
   if (password?.length < 6) {
     res.json({ message: "كلمة السر يجب ان تتكون من 6 حروف على الاقل", success: false });
     return;
@@ -82,17 +79,17 @@ const updateUser = async (req: Request, res: Response) => {
     return;
   }
   
-  if (!password && !username && admin == user.admin && password?.trim()===user.password && username?.toLowerCase().trim() === user.username){
+  if (!password && !username && user.role === role && password?.trim()===user.password && username?.toLowerCase().trim() === user.username){
     res.json({ message: "لم يتم إدخال أي بيانات", success: false });
   }
 
-  const admins = await userRepo.find({where: {admin: true}});
+  const admins = await userRepo.find({where: {role: 'admin'}});
 
-  if (admins.length === 1 && admin === false) {
+  if (admins.length === 1 && role === 'employee') {
     res.json({ message: "يجب ان يكون هناك مستخدم واحد مسؤول على الأقل", success: false });
     return
   }
-  const userData = { username, password, admin };
+  const userData = { username, password, role };
   const updatedUser = Object.assign(user, userData);
   const updated = await userRepo.save(updatedUser);
   res.json({ success: true, updated, message: "تم تعديل الحساب" });
@@ -118,9 +115,8 @@ const userLogin = async (req: Request, res: Response) => {
   const token = jwt.sign({ user_id: user.id, username: user.username }, "tayson", { expiresIn: '8h' })
   res.json({ 
     messsage: "تم تسجيل الدخول بنجاح ", 
-    success: true, token,
-    username: user.username, 
-    user_id: user.id, 
+    success: true, 
+    token,
     expDate: Date.now() + 8 * 60 * 60 * 1000 
   })
   
@@ -134,13 +130,33 @@ const allUsers = async (req: Request, res: Response) => {
 const checkUsers = async (req: Request, res: Response) => {
   const users = await userRepo.find();
   if (users.length > 0) {
-    res.json({ message: "هناك مستخدم موجود بالفعل", existing: true });
+    res.json({ message: "يوجد مستخدم موجود بالفعل", success: false });
   }else
-    res.json({ existing: false, message: "لا يوجد مستخدمين" });
+    res.json({ success: true, message: "لا يوجد مستخدمين" });
+}
+
+const currentSession = async (req: Request, res: Response) => {
+  const id = req.headers.user_id?.toString().split(' ')[1];
+
+  if(!id) {
+    res.json({ message: "ليست هناك جلسة", success: false });
+    return;
+  }
+  const user = await userRepo.findOne({where:{id}});
+
+  if (!user) {
+    res.json({ message: "هذا المستخدمم غير موجود", success: false });
+    return;
+  }
+
+  const {password, ...safeUser} = user
+
+  res.json({ success: true, user: safeUser});
 }
 
 export {
   deleteUser,
+  currentSession,
   addUser,
   userLogin,
   updateUser,
