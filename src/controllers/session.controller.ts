@@ -220,7 +220,7 @@ const endSession = async (req: Request, res: Response) => {
   const updatedDevice = await deviceRepo.save(deviceData)
   let timeDiff = null;
 
-  // WRAPPING FINAL TIME ORDER BEFORE CALCULATING ALL TIME ORDERS
+  // WRAPPING UP FINAL TIME ORDER BEFORE CALCULATING ALL TIME ORDERS
   if (session.time_type == "open") {
     timeDiff = (new Date().getTime() - new Date(session.started_at).getTime()) / (1000 * 60 * 60)
   } else {
@@ -236,7 +236,7 @@ const endSession = async (req: Request, res: Response) => {
 
   session.time_orders.push(finalTimeOrder)
 
-  //  COUNTING ORDERS AND CALCULATING COSTS
+  // CALCULATING COSTS
   let total = 0;
 
   session.orders?.map((order) => {
@@ -249,15 +249,14 @@ const endSession = async (req: Request, res: Response) => {
   const receiptData = receiptRepo.create({
     cashier, 
     total,
+    device: session.device,
     orders: session.orders,
     time_orders: session.time_orders,
     type: 'session'
   })
 
   await receiptRepo.save(receiptData);
-
-  console.log({receiptData})
-
+  
   session.orders = []
   session.time_orders = []
   session.device = undefined;
