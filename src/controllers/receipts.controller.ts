@@ -66,6 +66,7 @@ const allOuterReceipts = async (req:Request, res:Response)=>{
     .createQueryBuilder('receipts')
     .leftJoinAndSelect('receipts.cashier', 'cashier')
     // .limit(20)
+    .where('receipts.type = :type', {type: 'outer'})
     .getMany()
 
     // .find()
@@ -74,7 +75,7 @@ const allOuterReceipts = async (req:Request, res:Response)=>{
 
 const findOuterReceipt = async (req:Request, res:Response)=>{
     const {id} = req.params
-    const receipt = await recieptRepo.findOne({where: {id}})
+    const receipt = await recieptRepo.findOne({where: {id}, relations:{cashier:true, orders: true}})
     res.json({receipt})
 }
 

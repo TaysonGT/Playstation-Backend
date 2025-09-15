@@ -4,8 +4,8 @@ const ordersRouter = express.Router()
 
 ordersRouter.post('/:sessionId', addOrder)
 ordersRouter.delete('/:sessionId', deleteOrder)
+ordersRouter.get('/:sessionId', sessionOrders)
 ordersRouter.get('/outer', allOuterOrders)
-ordersRouter.get('/:id', sessionOrders)
 ordersRouter.get('/', allOrders)
 
 export default ordersRouter;
