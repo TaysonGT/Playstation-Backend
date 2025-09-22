@@ -97,12 +97,23 @@ const updateUser = async (req: Request, res: Response) => {
 
 const userLogin = async (req: Request, res: Response) => {
   const { username, password } = req.body;
+
   const trimmedPass:string = password.trim();
   const trimmedUser:string = username.trim();
+  
+  if (!trimmedUser) {
+    res.json({ message: "برجاء إدخال اسم المستخدم", success: false })
+    return
+  }
+  if (!trimmedPass) {
+    res.json({ message: "برجاء إدخال كلمة المرور", success: false })
+    return
+  }
+  
   const user = await userRepo.createQueryBuilder("users")
-    .where("LOWER(users.username) = LOWER(:query)", { query: `${trimmedUser}` })
+  .where("LOWER(users.username) = LOWER(:query)", { query: `${trimmedUser}` })
     .getOne();
-
+    
   if (!user) {
     res.json({ message: "مستخدم غير موجود", success: false })
     return
