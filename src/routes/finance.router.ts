@@ -8,6 +8,6 @@ financeRouter.get('/', allFinances)
 financeRouter.get('/users', getUsersFinances)
 financeRouter.post('/deduction', addDeduction);
 financeRouter.delete('/deduction/:id', removeDeduction);
-financeRouter.get('/:date/:user', statisticFinances);
+financeRouter.get('/:user', statisticFinances);
 
 export default financeRouter

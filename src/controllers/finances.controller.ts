@@ -9,7 +9,14 @@ const orderRepo = myDataSource.getRepository(Order)
 const receiptRepo = myDataSource.getRepository(Receipt)
 
 const statisticFinances = async (req:Request, res:Response)=>{
-    const { date, user } = req.params;
+    const { user } = req.params;
+    const { date } = req.query;
+
+    if(!(date)) {
+        res.json({success: false, message: 'No Date or Time Provided'})
+        return;
+    }
+    
     const query = receiptRepo
     .createQueryBuilder('receipts')
     .leftJoinAndSelect('receipts.cashier', 'cashier')
@@ -19,175 +26,180 @@ const statisticFinances = async (req:Request, res:Response)=>{
     user!=='all'&& query.where('cashier.id = :id', {id: user})
 
     const finances = await query.getMany()
-
-    let lastDay = 0;
-    let dailyFinances = 0;
-    let dailyGrowthLoss = 0;
-    let dailyGrowthLossSign = false;
+    
+    let yesterday = 0;
+    let today = 0;
     let lastWeek = 0;
-    let weeklyFinances = 0;
-    let weeklyGrowthLoss = 0;
-    let weeklyGrowthLossSign = false;
+    let currentWeek = 0;
     let lastMonth = 0;
-    let monthlyFinances = 0;
-    let monthlyGrowthLoss = 0;
-    let monthlyGrowthLossSign = false;
+    let currentMonth = 0;
     let lastYear = 0;
-    let yearlyFinances = 0;
-    let yearlyGrowthLoss = 0;
-    let yearlyGrowthLossSign = false;
-    let dailyDeduction = 0;
-    let lastDayDeduction = 0;
-    let dailyDeductionGrowthLoss = 0;
-    let dailyDeductionGrowthLossSign = true;
-    let monthlyDeduction = 0;
+    let currentYear = 0;
+
+    let todayDeduction = 0;
+    let yesterdayDeduction = 0;
+    let currentWeekDeduction = 0;
+    let lastWeekDeduction = 0;
+    let currentMonthDeduction = 0;
     let lastMonthDeduction = 0;
-    let monthlyDeductionGrowthLoss = 0;
-    let monthlyDeductionGrowthLossSign = false;
+    let currentYearDeduction = 0;
+    let lastYearDeduction = 0;
+
+    let todayGrowthLoss = 0;
+    let currentWeekGrowthLoss = 0;
+    let currentMonthGrowthLoss = 0;
+    let currentYearGrowthLoss = 0;
+
+    let currentMonthDeductionGrowthLoss = 0;
+    let todayDeductionGrowthLoss = 0;
+
     let productsRevenue = 0;
     let productsGrowthLoss = 0;
-    let productsGrowthLossSign = false;
 
-    const timeOffset = new Date(date).getTimezoneOffset();
+    const todayStart = new Date(date as string)
+    const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000)
+    const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
+    const currentWeekStart = new Date(new Date(todayStart).setDate(todayStart.getDate()-todayStart.getDay()))
+    const lastWeekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const currentMonthStart = new Date(new Date(todayStart).setFullYear(todayStart.getFullYear(), todayStart.getMonth(), 1))
+    const lastMonthStart = new Date(new Date(todayStart).setFullYear(todayStart.getFullYear(), todayStart.getMonth()-1, 1))
+    const currentYearStart = new Date(new Date(todayStart).setFullYear(todayStart.getFullYear(), 0, 1))
+    const lastYearStart = new Date(new Date(todayStart).setFullYear(todayStart.getFullYear()-1, 0, 1))
 
-    const currentDay = new Date(date);
-    // const startOfToday = currentDay.setHours(0+timeOffset,0,0,0);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0+timeOffset, 0, 0, 0);
     
-    const currentDayFinances = finances.filter((finance) => new Date(finance.created_at).toDateString()===currentDay.toDateString()).reverse();
+    const isToday = (dateString:string|Date)=>{
+        const date = new Date(dateString)
+        return date>=todayStart && date <tomorrowStart
+    }
 
-    const firstDayOfPreviousMonth = new Date(currentDay.getFullYear(), currentDay.getMonth() - 1, 1)
-    const firstDayOfCurrentMonth = new Date(currentDay.getFullYear(), currentDay.getMonth(), 1);
-    const firstDayofNextMonth = new Date(currentDay.getFullYear(), currentDay.getMonth() + 1, 1);
-    let nextSunday = Math.abs(7 - currentDay.getDay());
-    
-    finances?.map((finance)=> {
-        let addTime = new Date(new Date(finance.created_at).setHours(0+timeOffset,0,0,0))
+    const isYesterday = (dateString:string|Date)=>{
+        const date = new Date(dateString)
+        return date>=yesterdayStart && date<todayStart
+    }
 
-        if (addTime.toLocaleTimeString(undefined, {year: '2-digit', month: '2-digit', day: '2-digit'})===currentDay.toLocaleTimeString(undefined, {year: '2-digit', month: '2-digit', day: '2-digit'})){
-            if (finance.type == "deduction") {
-                dailyFinances -= finance.total;
-                dailyDeduction += finance.total;
-            }
-            else
-                dailyFinances += finance.total;
+    const isIncurrentWeek = (dateString:string|Date)=>{
+        const date = new Date(dateString)
+        return date>=currentWeekStart
+    }
+
+    const isInLastWeek = (dateString:string|Date)=>{
+        const date = new Date(dateString)
+        return date<currentWeekStart && date>=lastWeekStart
+    }
+
+    const isInCurrentMonth = (dateString:string|Date)=>{
+        const date = new Date(dateString)
+        return date>=currentMonthStart
+    }
+
+    const isInLastMonth = (dateString:string|Date)=>{
+        const date = new Date(dateString)
+        return date>=lastMonthStart && date < currentMonthStart
+    }
+
+    const isIncurrentYear = (dateString:string|Date)=>{
+        const date = new Date(dateString)
+        return date>=currentYearStart
+    }
+
+    const isInLastYear = (dateString:string|Date)=>{
+        const date = new Date(dateString)
+        return date>=lastYearStart && date < currentYearStart
+    }
+
+
+    finances?.map(r=>{
+        if(isToday(r.created_at)){
+            today+=r.total
+            if(r.type === 'deduction') todayDeduction+=r.total
         }
-        if (addTime < new Date(currentDay.getFullYear(), currentDay.getMonth(), currentDay.getDate())
-            && addTime > new Date(currentDay.getFullYear(), currentDay.getMonth(), currentDay.getDate() - 1)) {
-            if (finance.type == "deduction") {
-                lastDay -= finance.total;
-                lastDayDeduction += finance.total;
-            }
-            else
-                lastDay += finance.total;
+        
+        if(isYesterday(r.created_at)){
+            yesterday += r.total
+            if(r.type === 'deduction') yesterdayDeduction+=r.total
         }
-        if (new Date(currentDay.getFullYear(), currentDay.getMonth(), currentDay.getDate() + nextSunday) > addTime
-            && new Date(currentDay.getFullYear(), currentDay.getMonth(), currentDay.getDate() - currentDay.getDay()) < addTime) {
-            if (finance.type == "deduction") {
-                weeklyFinances -= finance.total;
-            }
-            else
-                weeklyFinances += finance.total;
+        
+        if(isIncurrentWeek(r.created_at)){
+            currentWeek+=r.total
+            if(r.type === 'deduction') currentWeekDeduction+=r.total
         }
-        if (currentDay.getMilliseconds() + (nextSunday * 24 * 60 * 60 * 1000) - (7 * 24 * 60 * 60 * 1000) > addTime.getMilliseconds()
-            && currentDay.getMilliseconds() - (currentDay.getDay() * 24 * 60 * 60 * 1000) - (7 * 24 * 60 * 60 * 1000) < addTime.getMilliseconds()) {
-            if (finance.type == "deduction") {
-                lastWeek -= finance.total;
-            }
-            else
-                lastWeek += finance.total;
+
+        if(isInLastWeek(r.created_at)){
+            lastWeek+=r.total
+            if(r.type === 'deduction') lastWeekDeduction+=r.total
         }
-        if (new Date(addTime) < firstDayofNextMonth
-            && new Date(addTime) >= firstDayOfCurrentMonth) {
-            if (finance.type == "deduction") {
-                monthlyFinances -= finance.total;
-                monthlyDeduction += finance.total;
-            }
-            else
-                monthlyFinances += finance.total;
+
+        if(isInCurrentMonth(r.created_at)){
+            currentMonth+=r.total
+            if(r.type === 'deduction') currentMonthDeduction+=r.total
         }
-        if (new Date(addTime) < firstDayOfCurrentMonth
-            && new Date(addTime) > firstDayOfPreviousMonth) {
-            if (finance.type == "deduction") {
-                lastMonth -= finance.total;
-                lastMonthDeduction += finance.total;
-            }
-            else
-                lastMonth += finance.total;
+
+        if(isInLastMonth(r.created_at)){
+            lastMonth+=r.total
+            if(r.type === 'deduction') lastMonthDeduction+=r.total
         }
-        if (addTime.getFullYear() == currentDay.getFullYear()) {
-            if (finance.type == "deduction") {
-                yearlyFinances -= finance.total;
-            }
-            else
-                yearlyFinances += finance.total;
+
+        if(isIncurrentYear(r.created_at)){
+            currentYear+=r.total
+            if(r.type === 'deduction') currentYearDeduction+=r.total
         }
-        if (addTime.getFullYear() == currentDay.getFullYear() - 1) {
-            if (finance.type == "deduction") {
-                lastYear -= finance.total;
-            }
-            else
-                lastYear += finance.total;
+
+        if(isInLastYear(r.created_at)){
+            lastYear+=r.total
+            if(r.type === 'deduction') lastYearDeduction+=r.total
         }
-    });
-    dailyGrowthLoss = Math.floor((Math.abs(dailyFinances - lastDay) / lastDay) * 100);
-    weeklyGrowthLoss = Math.floor((Math.abs(weeklyFinances - lastWeek) / lastWeek) * 100);
-    monthlyGrowthLoss = Math.floor((Math.abs(monthlyFinances - lastMonth) / lastMonth) * 100);
-    yearlyGrowthLoss = Math.floor((Math.abs(yearlyFinances - lastYear) / lastYear) * 100);
-    dailyDeductionGrowthLoss = Math.floor((Math.abs(dailyDeduction - lastDayDeduction) / lastDayDeduction) * 100);
-    monthlyDeductionGrowthLoss = Math.floor((Math.abs(monthlyDeduction - lastMonthDeduction) / lastMonthDeduction) * 100);
-    if (dailyFinances - lastDay > 0)
-        dailyGrowthLossSign = true;
-    if (weeklyFinances - lastWeek > 0)
-        weeklyGrowthLossSign = true;
-    if (monthlyFinances - lastMonth > 0)
-        monthlyGrowthLossSign = true;
-    if (yearlyFinances - lastYear > 0)
-        yearlyGrowthLossSign = true;
-    if (dailyDeduction - lastDayDeduction > 0)
-        dailyDeductionGrowthLossSign = false;
-    if (monthlyDeduction - lastMonthDeduction > 0)
-        monthlyDeductionGrowthLossSign = false;
+
+    })
+
+    todayGrowthLoss = Math.floor((Math.abs(today - yesterday) / yesterday) * 100);
+    currentWeekGrowthLoss = Math.floor((Math.abs(currentWeek - lastWeek) / lastWeek) * 100);
+    currentMonthGrowthLoss = Math.floor((Math.abs(currentMonth - lastMonth) / lastMonth) * 100);
+    currentYearGrowthLoss = Math.floor((Math.abs(currentYear - lastYear) / lastYear) * 100);
+    todayDeductionGrowthLoss = Math.floor((Math.abs(todayDeduction - yesterdayDeduction) / yesterdayDeduction) * 100);
+    currentMonthDeductionGrowthLoss = Math.floor((Math.abs(currentMonthDeduction - lastMonthDeduction) / lastMonthDeduction) * 100);
     
     const orders = await orderRepo.find();
     if (orders) {
-        let monthlyCost = 0;
+        let currentMonthCost = 0;
         let lastMonthCost = 0;
         orders.map((order) => {
             let monthDiff = new Date(order.ordered_at).getMonth() === new Date().getMonth();
             let lastMonthDiff = new Date(order.ordered_at).getMonth() === new Date().getMonth() - 1;
             let yearDiff = new Date(order.ordered_at).getFullYear() === new Date().getFullYear();
             if (monthDiff && yearDiff) {
-                monthlyCost += order.cost;
+                currentMonthCost += order.cost;
             }
             else if (lastMonthDiff && yearDiff) {
                 lastMonthCost += order.cost;
             }
         });
-        productsRevenue = monthlyCost;
-        productsGrowthLoss = Math.floor(Math.abs(monthlyCost - lastMonthCost) / lastMonthCost * 100);
-        if (monthlyCost - lastMonthCost > 0)
-            productsGrowthLossSign = true;
+        productsRevenue = currentMonthCost;
+        productsGrowthLoss = Math.floor(Math.abs(currentMonthCost - lastMonthCost) / lastMonthCost * 100);
     }
     
-    res.json(finances? {currentDay, tomorrow, finances, currentDayFinances, yearlyFinances, lastYear, lastWeek, lastDay, lastMonth, weeklyFinances, dailyFinances, monthlyFinances, dailyDeduction, lastDayDeduction, monthlyDeduction, lastMonthDeduction, dailyGrowthLoss, dailyGrowthLossSign, weeklyGrowthLoss, weeklyGrowthLossSign, monthlyGrowthLoss, monthlyGrowthLossSign, yearlyGrowthLoss, yearlyGrowthLossSign, dailyDeductionGrowthLoss, dailyDeductionGrowthLossSign, monthlyDeductionGrowthLoss, monthlyDeductionGrowthLossSign, productsRevenue, productsGrowthLoss, productsGrowthLossSign }
+    res.json(finances? {finances, today, currentWeek, currentMonth, currentYear, todayDeduction, currentWeekDeduction, currentMonthDeduction, currentYearDeduction, todayGrowthLoss, currentWeekGrowthLoss, currentMonthGrowthLoss, currentYearGrowthLoss, todayDeductionGrowthLoss, currentMonthDeductionGrowthLoss, productsRevenue, productsGrowthLoss}
     : {message: "حدث خطأ", success: false})
 }
 
 const addDeduction = async (req:Request, res:Response)=>{
   const { description, finances } = req.body;
   const cashier_id = req.headers.user_id?.toString().split(' ')[1];
+  const cashier = await userRepo.findOne({ where: { id: cashier_id } })
+  
+  if(!cashier){
+    res.json({success:false, message: 'User not found'})
+    return
+  }
+
   if (description && finances) {
-    const newFinance = receiptRepo.create({ 
-        total: parseInt(finances), 
+    const finance = receiptRepo.create({ 
+        total: -parseInt(finances), 
         description, 
         type: "deduction", 
-        cashier: {id: cashier_id}
+        cashier
     });
-    const finance = await receiptRepo.save(newFinance);
-    finance && res.json({ message: "تمت إضافة خصم بنجاح", success: true });
+    await receiptRepo.save(finance);
+    res.json({ message: "تمت إضافة خصم بنجاح", success: true });
   }
   else
       res.json({ message: "برجاء ملء كل البيانات", success: false });
@@ -212,8 +224,8 @@ const getUsersFinances = async (req:Request, res:Response)=>{
         id: string;
         username: string;
         role: 'admin'|'employee';
-        dailyFinances: number;
-        monthlyFinances: number;
+        todayFinances: number;
+        currentMonthFinances: number;
     }[] = [];
 
     users.map((user) => {
@@ -221,8 +233,8 @@ const getUsersFinances = async (req:Request, res:Response)=>{
             id: user.id,
             username: user.username,
             role: user.role,
-            dailyFinances: 0,
-            monthlyFinances: 0,
+            todayFinances: 0,
+            currentMonthFinances: 0,
         };
         
       finances.filter((finance) => finance.cashier.id === user.id).map((finance) => {
@@ -231,18 +243,18 @@ const getUsersFinances = async (req:Request, res:Response)=>{
         let addTime = new Date(new Date(finance.created_at).setHours(2, 0, 0, 0));
         if (addTime.getDate() == new Date().getDate() && new Date().getMilliseconds() - addTime.getMilliseconds() <= 24 * 60 * 60 * 1000) {
           if (finance.type == "deduction") {
-              userFinance.dailyFinances -= finance.total;
+              userFinance.todayFinances -= finance.total;
           }
           else
-            userFinance.dailyFinances += finance.total;
+            userFinance.todayFinances += finance.total;
         }
         if (new Date(addTime) < firstDayofNextMonth
           && new Date(addTime) >= firstDayOfCurrentMonth) {
           if (finance.type == "deduction") {
-            userFinance.monthlyFinances -= finance.total;
+            userFinance.currentMonthFinances -= finance.total;
           }
           else
-            userFinance.monthlyFinances += finance.total;
+            userFinance.currentMonthFinances += finance.total;
         }
       });
       userFinancesArr.push(userFinance);
