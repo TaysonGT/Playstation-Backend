@@ -14,6 +14,7 @@ import deviceTypesRouter from './routes/device-types.router';
 import configsRouter from './routes/main-configs.router';
 import receiptsRouter from './routes/receipts.router';
 import authRouter from './routes/auth.router';
+import cashRouter from './routes/cash.router';
 
 // Initializing App
 const app = express()
@@ -35,37 +36,26 @@ app.use(express.urlencoded({
 
 // Routes
 app.use('/auth', authRouter)
+app.use('/receipts', receiptsRouter)
 app.use(auth)
 app.use('/users', userRouter)
 app.use('/orders', ordersRouter)
 app.use('/devices', devicesRouter )
 app.use('/sessions', sessionRouter )
 app.use('/device-types', deviceTypesRouter)
-app.use('/finances', financeRouter )
+app.use('/finances', financeRouter)
+app.use('/cash', cashRouter)
 app.use('/products', productsRouter )
 app.use('/config', configsRouter )
-app.use('/receipts', receiptsRouter)
 
 // Server Running
-const initializeDataSource = async ()=>{
-    try{
-        await myDataSource
-        .initialize() 
-        .then(()=>{
-            console.log("Data Source Has Been Initialized!")
-        })
-    }catch(error){
-        throw new Error(error)
-    }
-}
-
-initializeDataSource()
-  .then(() => {
+myDataSource
+.initialize() 
+.then(()=>{
     app.listen(5000, () => {
         console.log(`Server running at http://localhost:5000`);
     });
-  })
-  .catch(err => {
-    console.error('Error initializing datasource:', err);
-    process.exit(1); 
-  });
+    console.log("Data Source Has Been Initialized!")
+}).catch((err)=>{
+    console.error("Error during Data Source initialization:", err)
+})

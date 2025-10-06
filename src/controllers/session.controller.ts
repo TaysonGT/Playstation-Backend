@@ -1,7 +1,6 @@
 import { Response, Request } from "express"
 import { myDataSource } from "../app-data-source";
 import { addDeviceDto } from "../dto/add-device.dto";
-import { timeDto } from "../dto/time-order.dto";
 import { Device } from "../entity/device.entity";
 import { TimeOrder } from "../entity/time-order.entity";
 import { Session } from '../entity/session.entity';
@@ -71,8 +70,8 @@ const changeDevice = async (req: Request, res: Response) => {
     cost = Math.ceil(((started_at - new Date(session.started_at).getTime()) / (1000 * 60 * 60)) * timePrice)
   }
   try{
-    const timeData: timeDto = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, started_at: new Date(session.started_at) }
-    const time_order = timeOrderRepo.create(timeData)
+    
+    const time_order = timeOrderRepo.create({ session, play_type: session.play_type, cost, started_at: new Date(session.started_at), device: session.device})
     await timeOrderRepo.save(time_order);
   
     session.device.status = false
@@ -97,52 +96,54 @@ const changeDevice = async (req: Request, res: Response) => {
 }
 
 const changePlayType = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { play_type } = req.body
+  try{  
+    const { id } = req.params;
+    const { play_type } = req.body
 
-  const session = await sessionRepo
-  .createQueryBuilder('session')
-  .innerJoinAndSelect('session.device', 'device')
-  .innerJoinAndSelect('device.type', 'type')
-  .where('session.id = :id', {id})
-  .getOne()  
+    const session = await sessionRepo
+    .createQueryBuilder('session')
+    .innerJoinAndSelect('session.device', 'device')
+    .innerJoinAndSelect('device.type', 'type')
+    .where('session.id = :id', {id})
+    .getOne()  
 
-  if (!session) {
-    res.json({ message: "هذه الجلسة غير موجودة", success: false })
-    return;
+    if (!session) {
+      res.json({ message: "هذه الجلسة غير موجودة", success: false })
+      return;
+    }
+    
+    if (!session.device) {
+      res.json({ success: false, message: "مش فاهم حاجة" })
+      return;
+    }
+    
+    if (session.time_type === "time" && new Date(session.ended_at) < new Date() && play_type) {
+      res.json({ message: " لقد انتهى وقت هذا الجهاز بالفعل", success: false })
+      return;
+    }
+    
+    let cost = 0;
+    const started_at = Date.now()
+    const timeDiff = (started_at - new Date(session.started_at).getTime()) / (1000 * 60 * 60)
+
+    if (session.play_type === "single") {
+      const timePrice = session.device.type.single_price
+      cost = Math.ceil(timeDiff * timePrice)
+    } else {
+      const timePrice = session.device.type.multi_price
+      cost = Math.ceil(timeDiff * timePrice)
+    }
+
+    const time_order = timeOrderRepo.create({ session, play_type: session.play_type, cost, started_at: session.started_at, device: session.device })
+    await timeOrderRepo.save(time_order);
+
+    const newSession = Object.assign(session, { ...session, play_type, started_at })
+    await sessionRepo.save(newSession)
+
+    res.json({ message: "تم تغيير نوع اللعب", success: true})
+  }catch(error){
+    res.json({ message: "حدث خطأ", success: false })
   }
-  
-  if (!session.device) {
-    res.json({ success: false, message: "مش فاهم حاجة" })
-    return;
-  }
-  
-  if (session.time_type == "time" && new Date(session.ended_at) < new Date() && play_type) {
-    res.json({ message: " لقد انتهى وقت هذا الجهاز بالفعل", success: false })
-    return;
-  }
-  
-  let cost = 0;
-  const started_at = Date.now()
-  const timeDiff = (started_at - new Date(session.started_at).getTime()) / (1000 * 60 * 60)
-
-  if (session.play_type == "single") {
-    const timePrice = session.device.type.single_price
-    cost = Math.ceil(timeDiff * timePrice)
-  } else {
-    const timePrice = session.device.type.multi_price
-    cost = Math.ceil(timeDiff * timePrice)
-  }
-
-  const timeData: timeDto = { session_id: id, play_type: session.play_type, time_type: session.time_type, cost, started_at: session.started_at }
-  const time_order = timeOrderRepo.create(timeData)
-  const savedTimeOrder = await timeOrderRepo.save(time_order);
-
-  const newSession = Object.assign(session, { ...session, play_type, started_at })
-  const updatedSession = await sessionRepo.save(newSession)
-
-  savedTimeOrder && updatedSession ? res.json({ message: "تم تغيير نوع اللعب", success: true, updatedSession })
-    : res.json({ message: "حدث خطأ", success: false })
 }
 
 const allSessions = async (req: Request, res: Response) => {
@@ -231,7 +232,7 @@ const endSession = async (req: Request, res: Response) => {
 
   let finalOrderCost = session.play_type === "single"? timeDiff * session.device.type.single_price: timeDiff * session.device.type.multi_price
 
-  const finalTimeOrder = timeOrderRepo.create({ session, started_at: session.started_at, play_type: session.play_type, cost: Math.ceil(finalOrderCost) })
+  const finalTimeOrder = timeOrderRepo.create({ session, started_at: session.started_at, play_type: session.play_type, cost: Math.ceil(finalOrderCost), device: session.device })
   await timeOrderRepo.save(finalTimeOrder)
 
   session.time_orders.push(finalTimeOrder)
@@ -246,7 +247,7 @@ const endSession = async (req: Request, res: Response) => {
   session.time_orders?.map((timeOrder) => total += timeOrder.cost)
 
   // TIME ORDERS RECEIPT
-  const receiptData = receiptRepo.create({
+  const receipt = receiptRepo.create({
     cashier, 
     total,
     device: session.device,
@@ -255,7 +256,7 @@ const endSession = async (req: Request, res: Response) => {
     type: 'session'
   })
 
-  await receiptRepo.save(receiptData);
+  await receiptRepo.save(receipt);
   
   session.orders = []
   session.time_orders = []

@@ -22,6 +22,7 @@ const statisticFinances = async (req:Request, res:Response)=>{
     .leftJoinAndSelect('receipts.cashier', 'cashier')
     .leftJoinAndSelect('receipts.time_orders', 'time_orders')
     .leftJoinAndSelect('receipts.orders', 'orders')
+    .leftJoinAndSelect('orders.product', 'product')
     
     user!=='all'&& query.where('cashier.id = :id', {id: user})
 
@@ -151,13 +152,16 @@ const statisticFinances = async (req:Request, res:Response)=>{
 
     })
 
-    todayGrowthLoss = Math.floor((Math.abs(today - yesterday) / yesterday) * 100);
-    currentWeekGrowthLoss = Math.floor((Math.abs(currentWeek - lastWeek) / lastWeek) * 100);
-    currentMonthGrowthLoss = Math.floor((Math.abs(currentMonth - lastMonth) / lastMonth) * 100);
-    currentYearGrowthLoss = Math.floor((Math.abs(currentYear - lastYear) / lastYear) * 100);
-    todayDeductionGrowthLoss = Math.floor((Math.abs(todayDeduction - yesterdayDeduction) / yesterdayDeduction) * 100);
-    currentMonthDeductionGrowthLoss = Math.floor((Math.abs(currentMonthDeduction - lastMonthDeduction) / lastMonthDeduction) * 100);
     
+    todayGrowthLoss = Math.round(((today - yesterday) / yesterday) * 100);
+    currentWeekGrowthLoss = Math.round(((currentWeek - lastWeek) / lastWeek) * 100);
+    currentMonthGrowthLoss = Math.round(((currentMonth - lastMonth) / lastMonth) * 100);
+    currentYearGrowthLoss = Math.round(((currentYear - lastYear) / lastYear) * 100);
+    todayDeductionGrowthLoss = Math.round(((todayDeduction - yesterdayDeduction) / yesterdayDeduction) * 100);
+    currentMonthDeductionGrowthLoss = Math.round(((currentMonthDeduction - lastMonthDeduction) / lastMonthDeduction) * 100);
+    
+    console.log({yesterday, today, todayGrowthLoss, currentWeek, lastWeek, currentWeekGrowthLoss, currentMonth, lastMonth, currentMonthGrowthLoss, currentYear, currentYearGrowthLoss})
+    console.log({calc: (today-yesterday)/yesterday})
     const orders = await orderRepo.find();
     if (orders) {
         let currentMonthCost = 0;

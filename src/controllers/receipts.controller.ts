@@ -3,7 +3,9 @@ import { Receipt } from "../entity/reciept.entity";
 import { Product } from "../entity/product.entity";
 import { myDataSource } from "../app-data-source";
 import { Order } from "../entity/order.entity";
+import { User } from "../entity/user.entity";
 
+const userRepo = myDataSource.getRepository(User)
 const recieptRepo = myDataSource.getRepository(Receipt)
 const productRepo = myDataSource.getRepository(Product)
 const orderRepo = myDataSource.getRepository(Order)
@@ -21,6 +23,12 @@ const createOuterReceipt = async (req:Request, res:Response)=>{
   let stockCheck = true;
   let total = 0;
   const cashier_id = req.headers.user_id?.toString().split(' ')[1];
+
+  const cashier = await userRepo.findOne({where: {id: cashier_id}})
+  if(!cashier){
+    res.status(403).json({success: false, message: "المستخدم غير موجود"})
+    return;
+  }
 
   const ordersWithProduct:{product_id: string, quantity: number, product: Product}[] = orderData.map((order:{product_id: string, quantity: number})=>{
     const product = products.find((prod) => prod.id == order.product_id) 
@@ -43,21 +51,25 @@ const createOuterReceipt = async (req:Request, res:Response)=>{
     return;
   }
 
-  const receipt = recieptRepo.create({ cashier:{id: cashier_id}, type: "outer", total });
+  const receipt = recieptRepo.create({cashier, type: "outer", total: 0});
   await recieptRepo.save(receipt);
 
   for(let order of ordersWithProduct){
     total += order.product.price * order.quantity;
     const stock = order.product.stock - order.quantity;
-    const updateProductsData = Object.assign(order.product, { stock });
+    const updatedProduct = Object.assign(order.product, { stock });
+    await productRepo.save(updatedProduct);
 
     let cost = order.product.price * order.quantity;
+    
+    const newOrder = orderRepo.create({ product: updatedProduct, quantity: order.quantity, cost, receipt });
 
-    const newOrder = orderRepo.create({ product: order.product, quantity: order.quantity, cost, receipt });
     await orderRepo.save(newOrder);
-    await productRepo.save(updateProductsData);
   }
-
+  
+  receipt.total = total;
+  await recieptRepo.save(receipt);
+  
   res.json({ success: true, message: "تم الطلب بنجاح", receipt });
 }
 
@@ -65,40 +77,58 @@ const allOuterReceipts = async (req:Request, res:Response)=>{
     const receipts = await recieptRepo
     .createQueryBuilder('receipts')
     .leftJoinAndSelect('receipts.cashier', 'cashier')
-    // .limit(20)
+    .leftJoinAndSelect('receipts.orders', 'orders')
+    .leftJoinAndSelect('orders.product', 'product')
     .where('receipts.type = :type', {type: 'outer'})
+    .orderBy('receipts.created_at', 'DESC')
     .getMany()
 
-    // .find()
     res.json({receipts})
 }
 
 const findOuterReceipt = async (req:Request, res:Response)=>{
     const {id} = req.params
-    const receipt = await recieptRepo.findOne({where: {id}, relations:{cashier:true, orders: true}})
+    const receipt = await recieptRepo.createQueryBuilder('receipt')
+    .leftJoinAndSelect('receipt.cashier', 'cashier')
+    .leftJoinAndSelect('receipt.orders', 'orders')
+    .leftJoinAndSelect('orders.product', 'product')
+    .where('receipt.id = :id', {id})
+    .andWhere('receipt.type = :type', {type: 'outer'})
+    .getOne()
+
     res.json({receipt})
 }
 
 const allSessionReceipts = async (req:Request, res:Response)=>{
-    const timeReceipts = await recieptRepo
+    const receipts = await recieptRepo
     .createQueryBuilder('receipts')
     .leftJoinAndSelect('receipts.time_orders', 'time_orders')
     .leftJoinAndSelect('receipts.cashier', 'cashier')
     .leftJoinAndSelect('receipts.orders', 'orders')
+    .leftJoinAndSelect('receipts.device', 'receiptDevice')
+    .leftJoinAndSelect('time_orders.device', 'timeOrderDevice')
     .leftJoinAndSelect('orders.product', 'product')
+    .where('receipts.type = :type', {type: 'session'})
+    .orderBy('receipts.created_at', 'DESC')
     .getMany()
-    // find({
-    //   where: {type: "session"}, 
-    //   relations: {device: true, time_orders: true, orders:true, cashier: true}
-    // })
     
-    res.json({timeReceipts})
+    res.json({receipts})
 }
 
 const findSessionReceipt = async (req:Request, res:Response)=>{
     const {id} = req.params
-    const timeReceipt = await recieptRepo.findOne({where:{id}})
-    res.json({timeReceipt})
+    const receipt = await recieptRepo.createQueryBuilder('receipt')
+    .leftJoinAndSelect('receipt.cashier', 'cashier')
+    .leftJoinAndSelect('receipt.device', 'receiptDevice')
+    .leftJoinAndSelect('receipt.time_orders', 'time_orders')
+    .leftJoinAndSelect('time_orders.device', 'timeOrderDevice')
+    .leftJoinAndSelect('receipt.orders', 'orders')
+    .leftJoinAndSelect('orders.product', 'product')
+    .where('receipt.id = :id', {id})
+    .andWhere('receipt.type = :type', {type: 'session'})
+    .getOne()
+    
+    res.json({receipt})
 }
 
 

@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, OneToOne, ManyToOne, OneToMany 
 import { Session } from "./session.entity";
 import { DeviceType } from "./device-type.entity";
 import { Receipt } from "./reciept.entity";
+import { TimeOrder } from "./time-order.entity";
 
 @Entity('devices')
 export class Device{
@@ -14,6 +15,9 @@ export class Device{
     @Column({default: false})
     status: boolean;
     
+    @OneToMany(()=>TimeOrder, (timeOrders)=>timeOrders.device)
+    timeOrders: TimeOrder;
+
     @ManyToOne(()=>DeviceType, (deviceType)=>deviceType.devices)
     type: DeviceType;
 

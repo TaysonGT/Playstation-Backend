@@ -1,4 +1,4 @@
-import {Response, Request} from "express"
+import { Response, Request } from "express"
 import { myDataSource } from "../app-data-source";
 import { addDeviceDto } from "../dto/add-device.dto";
 import { Device } from '../entity/device.entity';
