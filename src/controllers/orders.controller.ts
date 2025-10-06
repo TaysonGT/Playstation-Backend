@@ -3,14 +3,12 @@ import { myDataSource } from "../app-data-source";
 import { Order } from "../entity/order.entity";
 import { Product } from './../entity/product.entity';
 import { addProductDto } from "../dto/add-product.dto";
-import { TimeOrder } from "../entity/time-order.entity";
 import { Session } from "../entity/session.entity";
 import { editOrderDto } from "../dto/add-order.dto";
 import { IsNull } from "typeorm"
 
 const orderRepo = myDataSource.getRepository(Order)
 const sessionRepo = myDataSource.getRepository(Session)
-const timeOrderRepo = myDataSource.getRepository(TimeOrder)
 const productRepo = myDataSource.getRepository(Product)
 
 const allOrders = async (req:Request, res:Response)=>{
@@ -25,33 +23,50 @@ const allOuterOrders =  async (req:Request, res:Response)=>{
 
 const sessionOrders = async (req:Request, res:Response)=>{
     const {sessionId} = req.params
-    const orders = await orderRepo.find({where:{session: {id: sessionId}}, relations:{product:true}})
-    const timeOrders = await timeOrderRepo.find({where:{session: {id: sessionId}}})
-    const products = await productRepo.find()
-    
-    let arrangedOrders:{
-    product: Product;
-    cost: number;
-    quantity: number}[] = [];
-    
-    products.map((product)=>{
-        let entity = {
-            product,
-            cost: 0,
-            quantity:0
-        }
+    const session = await sessionRepo.createQueryBuilder('session')
+    .leftJoinAndSelect('session.orders', 'orders')
+    .leftJoinAndSelect('orders.product', 'product')
+    .leftJoinAndSelect('session.time_orders', 'time_orders')
+    .where('session.id = :id', {id: sessionId})
+    .getOne()
 
-        const collected = orders.filter((order)=> order.product.id == product.id)
-        if(collected.length>0){
-            collected.map((order)=> {
-                entity.cost += order.cost
-                entity.quantity+= order.quantity
-            })
-            arrangedOrders.push(entity)
-        }
+    if(!session){
+        res.status(404).json({success: false, message: "الجلسة غير موجودة"})
+        return;
+    }
+    
+    let cummulatedOrders:{
+        product: Product;
+        cost: number;
+        quantity: number
+    }[] = [];
+    
+    session.orders.map((order)=>{        
+        let found = false;
+
+        cummulatedOrders.map((cummulatedOrder)=>{
+            if(order.product.id === cummulatedOrder.product.id){
+                found = true
+                return{
+                    ...cummulatedOrder,
+                    cost: cummulatedOrder.cost + order.cost,
+                    quantity: cummulatedOrder.quantity + order.quantity
+                }
+            }
+            return cummulatedOrder;
+        })
+
+        if(!found){
+            let cummulatedOrder = {
+                product: order.product,
+                cost: order.cost,
+                quantity: order.quantity
+            }
+            cummulatedOrders.push(cummulatedOrder)
+        }    
     })
 
-    const timeOrdersWithString = timeOrders.map((order)=>{
+    const timeOrdersWithString = session.time_orders?.map((order)=>{
         let time = Math.floor((new Date(order.ended_at).getTime() - new Date(order.started_at).getTime()) /1000)
         const hours = Math.floor(time / (60*60))
         const minutes = Math.floor(time/(60)) % 60
@@ -65,7 +80,7 @@ const sessionOrders = async (req:Request, res:Response)=>{
         return {...order, time: timeString}
     })
   
-    res.json({orders, timeOrders: timeOrdersWithString, arrangedOrders})
+    res.json({orders: cummulatedOrders, time_orders: timeOrdersWithString})
 }
 
 const addOrder = async(req: Request, res: Response)=>{
