@@ -1,28 +1,25 @@
 import { Response, Request } from "express"
 import { myDataSource } from "../app-data-source";
-import { CashTransaction } from "../entity/cash-transaction.entity";
 import { User } from "../entity/user.entity";
 import { Receipt } from "../entity/reciept.entity";
 import { CashCollection } from "../entity/cash-collection.entity";
 
-const transactionRepo = myDataSource.getRepository(CashTransaction)
 const collectionRepo = myDataSource.getRepository(CashCollection)
 const receiptRepo = myDataSource.getRepository(Receipt)
 const userRepo = myDataSource.getRepository(User)
 
 export const makeCollection = async(req: Request, res: Response)=>{
     const cashier_id = req.headers.user_id?.toString().split(' ')[1];
-    const {amount, description }= req.body;
+    const {amount_collected, notes, cash_counted }= req.body;
 
     const lastCollection = await collectionRepo
     .createQueryBuilder('collection')
-    .innerJoinAndSelect('collection.transaction', 'transaction')
-    .orderBy('transaction.timestamp', 'DESC')
+    .orderBy('collection.timestamp', 'DESC')
     .getOne();
 
     if(lastCollection){
         const currentTime = new Date();
-        const timeDifference = currentTime.getTime() - new Date(lastCollection.transaction.timestamp).getTime();
+        const timeDifference = currentTime.getTime() - new Date(lastCollection.timestamp).getTime();
         const minutesDifference = timeDifference / (1000 * 60);
         if(minutesDifference < 5){
             res.json({message: `لا يمكن اجراء عملية تحصيل الآن. برجاء الانتظار ${Math.ceil(5 - minutesDifference)} دقائق`, success: false})
@@ -30,7 +27,7 @@ export const makeCollection = async(req: Request, res: Response)=>{
         }       
     }
     
-    if(amount <= 0){
+    if(amount_collected <= 0){
         res.json({message: "برجاء ادخال كل البيانات بشكل صحيح", success: false})
         return;
     }
@@ -44,25 +41,27 @@ export const makeCollection = async(req: Request, res: Response)=>{
 
     const finances = await receiptRepo.createQueryBuilder('receipts')
     .select('SUM(receipts.total)', 'total')
-    .where('receipts.created_at > :lastCollectionTime', { lastCollectionTime: lastCollection?.transaction.timestamp || new Date(0)})
+    .where('receipts.created_at > :lastCollectionTime', { lastCollectionTime: lastCollection?.timestamp || new Date(0)})
     .getRawOne();
 
-    const transactions = await transactionRepo
-    .createQueryBuilder('transaction')
-    .andWhere('transaction.timestamp > :lastCollectionTime', { lastCollectionTime: lastCollection?.transaction.timestamp || new Date(0)})
-    .orderBy('transaction.timestamp', 'DESC')
-    .getMany();
+    const expected_cash = (finances.total? parseFloat(finances.total): 0) + (lastCollection?.float_remaining || 0);
 
-    const total = transactions.reduce((sum, t)=> sum + t.amount, 0) + (finances.total? parseFloat(finances.total): 0) + (lastCollection?.current_balance || 0);
+    const cash_over_short = cash_counted-expected_cash
 
-    if(amount > total){
-        res.json({message: "لا يمكن تحصيل مبلغ أكبر من إجمالي المبيعات منذ آخر تحصيل", success: false})
+    if(amount_collected > expected_cash+cash_over_short){
+        res.json({message: "المبلغ المطلوب سحبه غير متوفر", success: false})
         return;
     }
 
-    const transaction = transactionRepo.create({amount: -amount, type: 'collection', cashier, description})
-    await transactionRepo.save(transaction)
-    const collection = collectionRepo.create({transaction, current_balance: total-amount})
+    const collection = collectionRepo.create({
+        starting_float_amount: lastCollection?.float_remaining || 0,
+        notes,
+        cash_counted,
+        expected_cash,
+        amount_collected,
+        cash_over_short,
+        float_remaining: cash_counted-amount_collected,
+    })
     await collectionRepo.save(collection)
     res.json({collection, message: "تمت عملية التحصيل بنجاح", success: true})
 }
@@ -70,33 +69,15 @@ export const makeCollection = async(req: Request, res: Response)=>{
 export const currentBalance = async(req: Request, res: Response)=>{
     const lastCollection = await collectionRepo
     .createQueryBuilder('collection')
-    .innerJoinAndSelect('collection.transaction', 'transaction')
-    .orderBy('transaction.timestamp', 'DESC')
+    .orderBy('collection.timestamp', 'DESC')
     .getOne();
 
     const finances = await receiptRepo.createQueryBuilder('receipts')
     .select('SUM(receipts.total)', 'total')
-    .where('receipts.created_at > :lastCollectionTime', { lastCollectionTime: lastCollection?.transaction.timestamp || new Date(0)})
+    .where('receipts.created_at > :lastCollectionTime', { lastCollectionTime: lastCollection?.timestamp || new Date(0)})
     .getRawOne();
 
-    const transactions = await transactionRepo
-    .createQueryBuilder('transaction')
-    .andWhere('transaction.timestamp > :lastCollectionTime', { lastCollectionTime: lastCollection?.transaction.timestamp || new Date(0)})
-    .orderBy('transaction.timestamp', 'DESC')
-    .getMany();
+    const total = (finances.total? parseFloat(finances.total): 0) + (lastCollection?.float_remaining || 0);
 
-    const total = transactions.reduce((sum, t)=> sum + t.amount, 0) + (finances.total? parseFloat(finances.total): 0) + (lastCollection?.current_balance || 0);
-
-    res.json({total, success: true})
-}
-
-export const allTransactions = async(req: Request, res: Response)=>{
-    const transactions = await transactionRepo
-    .createQueryBuilder('transaction')
-    .leftJoinAndSelect('transaction.cashier', 'cashier')
-    .leftJoinAndSelect('transaction.collection', 'collection')
-    .orderBy('transaction.timestamp', 'DESC')
-    .getMany()
-
-    res.json({transactions, success: true})
+    res.json({total, lastCollection: lastCollection?.timestamp, success: true})
 }

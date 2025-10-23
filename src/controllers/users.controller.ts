@@ -125,7 +125,7 @@ const userLogin = async (req: Request, res: Response) => {
 
   const token = jwt.sign({ user_id: user.id, username: user.username }, "tayson", { expiresIn: '8h' })
   res.json({ 
-    messsage: "تم تسجيل الدخول بنجاح ", 
+    message: "تم تسجيل الدخول بنجاح ", 
     success: true, 
     token,
     expDate: Date.now() + 8 * 60 * 60 * 1000 
@@ -162,10 +162,9 @@ const currentSession = async (req: Request, res: Response) => {
     res.json({ message: "هذا المستخدمم غير موجود", success: false });
     return;
   }
-
   const {password, ...safeUser} = user
 
-  res.json({ success: true, user: safeUser});
+  res.json({ success: true, user: safeUser });
 }
 
 export {

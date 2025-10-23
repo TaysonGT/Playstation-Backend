@@ -36,8 +36,9 @@ app.use(express.urlencoded({
 
 // Routes
 app.use('/auth', authRouter)
-app.use('/receipts', receiptsRouter)
+app.use('/configs', configsRouter )
 app.use(auth)
+app.use('/receipts', receiptsRouter)
 app.use('/users', userRouter)
 app.use('/orders', ordersRouter)
 app.use('/devices', devicesRouter )
@@ -46,7 +47,6 @@ app.use('/device-types', deviceTypesRouter)
 app.use('/finances', financeRouter)
 app.use('/cash', cashRouter)
 app.use('/products', productsRouter )
-app.use('/config', configsRouter )
 
 // Server Running
 myDataSource
