@@ -115,6 +115,33 @@ const allSessionReceipts = async (req:Request, res:Response)=>{
     res.json({receipts})
 }
 
+const allReceipts = async (req:Request, res:Response)=>{
+    const {page = '1', limit = '10', type} = req.query
+    const numerizedLimit = parseInt(limit as string)
+    const numerizedPage = parseInt(page as string)
+
+    const query = recieptRepo
+    .createQueryBuilder('receipts')
+    .leftJoinAndSelect('receipts.time_orders', 'time_orders')
+    .leftJoinAndSelect('receipts.cashier', 'cashier')
+    .leftJoinAndSelect('receipts.orders', 'orders')
+    .leftJoinAndSelect('receipts.device', 'receiptDevice')
+    .leftJoinAndSelect('time_orders.device', 'timeOrderDevice')
+    .leftJoinAndSelect('orders.product', 'product')
+    .orderBy('receipts.created_at', 'DESC')
+    .skip(numerizedLimit*(numerizedPage-1))
+    .take(numerizedLimit)
+
+    if(type){
+      query.where('receipts.type = :type', {type})
+    }
+
+    const [receipts, total] = await query
+    .getManyAndCount()
+
+    res.json({receipts, total, page: numerizedPage, limit: numerizedLimit})
+}
+
 const findSessionReceipt = async (req:Request, res:Response)=>{
     const {id} = req.params
     const receipt = await recieptRepo.createQueryBuilder('receipt')
@@ -137,5 +164,6 @@ export {
     allOuterReceipts,
     findOuterReceipt,
     allSessionReceipts,
+    allReceipts,
     findSessionReceipt
 }

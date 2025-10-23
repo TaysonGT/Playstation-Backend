@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm";
 import { Receipt } from "./reciept.entity";
-import { CashAssignment } from "./cash-assignment.entity";
-import { CashTransaction } from "./cash-transaction.entity";
+import { CashCollection } from "./cash-collection.entity";
+import { DeductionType } from "./deduction-type.entity";
 
 @Entity('users')
 export class User {
@@ -20,9 +20,9 @@ export class User {
     @OneToMany(()=>Receipt, (receipt)=> receipt.cashier)
     receipts: Receipt[];
 
-    @OneToMany(()=>CashAssignment, (session)=> session.cashier)
-    cashAssignments: CashAssignment[];
-    
-    @OneToMany(()=>CashTransaction, (transaction)=> transaction.cashier)
-    cashTransactions: CashTransaction[];
+    @OneToMany(()=>DeductionType, (deductionTypes)=> deductionTypes.created_by)
+    createdDeductionTypes: DeductionType[];
+
+    @OneToMany(()=>CashCollection, (cashCollection)=> cashCollection.collected_by)
+    cashCollections: CashCollection[];
 }
