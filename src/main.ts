@@ -1,7 +1,7 @@
 import express from 'express';
 import { myDataSource } from './app-data-source';
 import cors from 'cors';
-import { auth } from './middleware/user.auth';
+import { auth } from './middleware/auth.middleware';
 import devicesRouter from './routes/devices.router';
 import ordersRouter from './routes/orders.router';
 import cookieParser from 'cookie-parser';

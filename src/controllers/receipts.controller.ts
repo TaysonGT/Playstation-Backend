@@ -3,14 +3,13 @@ import { Receipt } from "../entity/reciept.entity";
 import { Product } from "../entity/product.entity";
 import { myDataSource } from "../app-data-source";
 import { Order } from "../entity/order.entity";
-import { User } from "../entity/user.entity";
+import { AuthRequest } from "../middleware/auth.middleware";
 
-const userRepo = myDataSource.getRepository(User)
 const recieptRepo = myDataSource.getRepository(Receipt)
 const productRepo = myDataSource.getRepository(Product)
 const orderRepo = myDataSource.getRepository(Order)
 
-const createOuterReceipt = async (req:Request, res:Response)=>{
+const createOuterReceipt = async (req:AuthRequest, res:Response)=>{
   const { orderData } = req.body;
   
   if (orderData.length < 1) {
@@ -22,9 +21,9 @@ const createOuterReceipt = async (req:Request, res:Response)=>{
 
   let stockCheck = true;
   let total = 0;
-  const cashier_id = req.headers.user_id?.toString().split(' ')[1];
 
-  const cashier = await userRepo.findOne({where: {id: cashier_id}})
+  const cashier = req.user
+
   if(!cashier){
     res.status(403).json({success: false, message: "المستخدم غير موجود"})
     return;
@@ -51,7 +50,7 @@ const createOuterReceipt = async (req:Request, res:Response)=>{
     return;
   }
 
-  const receipt = recieptRepo.create({cashier, type: "outer", total: 0});
+  const receipt = recieptRepo.create({cashier: {id: cashier.id}, type: "outer", total: 0});
   await recieptRepo.save(receipt);
 
   for(let order of ordersWithProduct){

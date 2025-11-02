@@ -1,5 +1,5 @@
 import { getConfigs, saveConfigs } from '../controllers/main-configs.controller';
-import {auth, isAdmin} from '../middleware/user.auth'
+import {auth, isAdmin} from '../middleware/auth.middleware'
 import express from 'express';
 const configsRouter = express.Router()
 

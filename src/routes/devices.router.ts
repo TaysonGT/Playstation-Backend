@@ -1,5 +1,5 @@
 import { findDevice, allDevices, addDevice, updateDevice, deleteDevice} from "../controllers/devices.controller";
-import {isAdmin} from '../middleware/user.auth'
+import {isAdmin} from '../middleware/auth.middleware'
 
 import express from 'express';
 const devicesRouter = express.Router()

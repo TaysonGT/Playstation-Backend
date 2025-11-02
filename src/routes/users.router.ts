@@ -5,7 +5,7 @@ import {
   deleteUser,
   addUser,
 } from '../controllers/users.controller'
-import {isAdmin} from '../middleware/user.auth'
+import {isAdmin} from '../middleware/auth.middleware'
 import express from 'express';
 const userRouter = express.Router()
 

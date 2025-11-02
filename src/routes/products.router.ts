@@ -1,5 +1,5 @@
 import { allProducts, addProduct, deleteProduct, updateProduct, oneProduct } from '../controllers/products.controller'
-import {isAdmin} from '../middleware/user.auth'
+import {isAdmin} from '../middleware/auth.middleware'
 import express from 'express';
 const productsRouter = express.Router()
 

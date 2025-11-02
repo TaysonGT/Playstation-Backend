@@ -222,29 +222,6 @@ const statisticFinances = async (req:Request, res:Response)=>{
     : {message: "حدث خطأ", success: false})
 }
 
-// const addDeduction = async (req:Request, res:Response)=>{
-//   const { description, finances } = req.body;
-//   const cashier_id = req.headers.user_id?.toString().split(' ')[1];
-//   const cashier = await userRepo.findOne({ where: { id: cashier_id } })
-  
-//   if(!cashier){
-//     res.json({success:false, message: 'User not found'})
-//     return
-//   }
-
-//   if (description && finances) {
-//     const finance = receiptRepo.create({ 
-//         total: -parseInt(finances), 
-//         description, 
-//         type: "deduction", 
-//         cashier
-//     });
-//     await receiptRepo.save(finance);
-//     res.json({ message: "تمت إضافة خصم بنجاح", success: true });
-//   }
-//   else
-//       res.json({ message: "برجاء ملء كل البيانات", success: false });
-// }
 
 const removeDeduction = async (req:Request, res:Response)=>{
   const { id } = req.params;
@@ -283,18 +260,10 @@ const getUsersFinances = async (req:Request, res:Response)=>{
         const firstDayofNextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
         let addTime = new Date(new Date(finance.created_at).setHours(2, 0, 0, 0));
         if (addTime.getDate() == new Date().getDate() && new Date().getMilliseconds() - addTime.getMilliseconds() <= 24 * 60 * 60 * 1000) {
-        //   if (finance.type == "deduction") {
-        //       userFinance.todayFinances -= finance.total;
-        //   }
-        //   else
             userFinance.todayFinances += finance.total;
         }
         if (new Date(addTime) < firstDayofNextMonth
           && new Date(addTime) >= firstDayOfCurrentMonth) {
-        //   if (finance.type == "deduction") {
-        //     userFinance.currentMonthFinances -= finance.total;
-        //   }
-        //   else
             userFinance.currentMonthFinances += finance.total;
         }
       });
@@ -365,15 +334,26 @@ const productsRevenue = async (req:Request, res:Response)=>{
     .innerJoinAndSelect('orders.receipt', 'receipt')
     .getMany()
 
-    const productsRevenue = products.map((product)=>({
-        product: product.name, 
-        sales: product.orders.filter(order=>
+    const ordersTotal = products.flatMap(product=>product.orders).filter(order=>
+        period==='monthly'?
+            new Date(order.receipt.created_at).getMonth()===new Date(date as string).getMonth()&&
+            new Date(order.receipt.created_at).getFullYear()===new Date(date as string).getFullYear()
+        : new Date(order.receipt.created_at).getFullYear()===new Date(date as string).getFullYear()
+    ).reduce((total,order)=>total+order.cost,0) 
+
+    const productsRevenue = products.map((product)=>{
+        const sales = product.orders.filter(order=>
             period==='monthly'?
                 new Date(order.receipt.created_at).getMonth()===new Date(date as string).getMonth()&&
                 new Date(order.receipt.created_at).getFullYear()===new Date(date as string).getFullYear()
             : new Date(order.receipt.created_at).getFullYear()===new Date(date as string).getFullYear()
         ).reduce((total,order)=>total+order.cost,0)
-    })).sort((a,b)=>b.sales-a.sales)
+        return {
+            product: product.name, 
+            sales,
+            percent: parseFloat((sales*100/ordersTotal).toFixed(1))
+        }
+    }).filter(product=>product.sales>0).sort((a,b)=>b.sales-a.sales)
 
     const previousTotal = products.flatMap(p=>p.orders).filter(order=>
         period==='monthly'?
@@ -392,14 +372,6 @@ const productsRevenue = async (req:Request, res:Response)=>{
         getDaysList(new Date(date as string))
         : getMonthsList(new Date(date as string))
 
-    const topFourPercents = productsRevenue.slice(0,4).map(d=> ({...d, percent: parseFloat(((d.sales/total)*100).toFixed(1))}))
-
-    const topFourCummulatedPercent = parseFloat(topFourPercents.reduce((total, percent)=>total+percent.percent,0).toFixed(1))
-    const topFourCummulatedSales = topFourPercents.reduce((total, percent)=>total+percent.sales,0)
-    
-    const topFivePercents = [...topFourPercents, {product: 'others', percent: Math.round((100-topFourCummulatedPercent)*100)/100, sales: total-topFourCummulatedSales}]
-    .filter(percent=>percent.percent!=0)
-
     const data = datesList.map((date)=>{
         const sales = products.flatMap(product=>product.orders).filter((order)=>
             period === 'monthly' ?
@@ -412,7 +384,7 @@ const productsRevenue = async (req:Request, res:Response)=>{
         ).reduce((a,order)=>a+order.cost,0)
         return {date, sales}
     })
-    res.json({success:true, total, growthLoss, data, topFivePercents})
+    res.json({success:true, total, growthLoss, data, productsList: productsRevenue})
 }
 
 const playingRevenue = async (req:Request, res:Response)=>{
@@ -616,7 +588,7 @@ const collectiveRevenue = async (req:Request, res:Response)=>{
 }
 
 const employeesRevenue = async (req:Request, res:Response)=>{
-    const {period='monthly', date=new Date().toISOString(), top5 = false} = req.query
+    const {period='monthly', date=new Date().toISOString()} = req.query
 
     const cashiers = await userRepo.createQueryBuilder('cashiers')
     .leftJoinAndSelect('cashiers.receipts', 'receipts')
@@ -650,49 +622,20 @@ const employeesRevenue = async (req:Request, res:Response)=>{
         
         const growthLoss = previousRevenue? Math.round((revenue-previousRevenue)*100/previousRevenue) : 0
 
-        const percent = parseFloat((revenue*100/total).toFixed(2))
-
+        const percent = parseFloat((revenue*100/total).toFixed(1))
+        
         return {
             cashier: cashier.username,
             revenue,
             growthLoss, 
             percent
         }
-    })
-
-    const top5List:{
-        cashier: string;
-        revenue: number;
-        growthLoss: number;
-        percent: number;
-    }[] = []
+    }).sort((a,b)=>b.revenue-a.revenue)
     
-    if(top5){
-        const sortedUsers = usersRevenue.sort((a,b)=>b.revenue-a.revenue)
-
-        if(sortedUsers.length <= 5){
-            top5List.push(...sortedUsers)
-        }else{
-            const top4 = sortedUsers.slice(0,4)
-            top5List.push(...top4)
-            const othersRevenue = sortedUsers.reduce((total, user)=> total+user.revenue,0);
-            const others = {
-                cashier: 'Others',
-                revenue: othersRevenue,
-                growthLoss: 0,
-                percent: parseFloat((othersRevenue*100/total).toFixed(2))
-            }
-            top5List.push(others)
-        }
-    }
-
-    console.log(top5List)
-    
-    res.json({success: true, usersRevenue, top5List})
+    res.json({success: true, usersRevenue, employeesList: usersRevenue})
 }
 
 export {
-    // addDeduction,
     removeDeduction,
     collectiveRevenue,
     allFinances,
