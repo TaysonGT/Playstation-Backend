@@ -1,5 +1,5 @@
 import { addDeviceType, findDeviceType, allDeviceTypes, updateDeviceType } from '../controllers/devices.controller';
-import {isAdmin} from '../middleware/user.auth'
+import {isAdmin} from '../middleware/auth.middleware'
 
 import express from 'express';
 const deviceTypesRouter = express.Router()

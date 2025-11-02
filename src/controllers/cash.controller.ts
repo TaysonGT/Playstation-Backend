@@ -3,13 +3,13 @@ import { myDataSource } from "../app-data-source";
 import { User } from "../entity/user.entity";
 import { Receipt } from "../entity/reciept.entity";
 import { CashCollection } from "../entity/cash-collection.entity";
+import { AuthRequest } from "../middleware/auth.middleware";
 
 const collectionRepo = myDataSource.getRepository(CashCollection)
 const receiptRepo = myDataSource.getRepository(Receipt)
 const userRepo = myDataSource.getRepository(User)
 
-export const makeCollection = async(req: Request, res: Response)=>{
-    const cashier_id = req.headers.user_id?.toString().split(' ')[1];
+export const makeCollection = async(req: AuthRequest, res: Response)=>{
     const {amount_collected, notes, cash_counted }= req.body;
 
     const lastCollection = await collectionRepo
@@ -32,7 +32,7 @@ export const makeCollection = async(req: Request, res: Response)=>{
         return;
     }
 
-    const cashier = await userRepo.findOne({ where: { id: cashier_id } })
+    const cashier = req.user
     
     if (!cashier) {
         res.json({ success: false, message: "مستخدم غير موجود" })
@@ -61,6 +61,7 @@ export const makeCollection = async(req: Request, res: Response)=>{
         amount_collected,
         cash_over_short,
         float_remaining: cash_counted-amount_collected,
+        collected_by: {id: cashier.id}
     })
     await collectionRepo.save(collection)
     res.json({collection, message: "تمت عملية التحصيل بنجاح", success: true})
@@ -79,5 +80,50 @@ export const currentBalance = async(req: Request, res: Response)=>{
 
     const total = (finances.total? parseFloat(finances.total): 0) + (lastCollection?.float_remaining || 0);
 
-    res.json({total, lastCollection: lastCollection?.timestamp, success: true})
+    res.json({total, lastCollection, success: true})
+}
+
+export const cashReport = async(req: Request, res: Response)=>{
+    const lastCollection = await collectionRepo
+    .createQueryBuilder('collection')
+    .orderBy('collection.timestamp', 'DESC')
+    .getOne();
+
+    const finances = await receiptRepo.createQueryBuilder('receipts')
+    .select('SUM(receipts.total)', 'total')
+    .where('receipts.created_at > :lastCollectionTime', { lastCollectionTime: lastCollection?.timestamp || new Date(0)})
+    .getRawOne();
+
+    const total = (finances.total? parseFloat(finances.total): 0) + (lastCollection?.float_remaining || 0);
+
+    const employeesRevenue = await userRepo.createQueryBuilder('user')
+    .leftJoinAndSelect('user.receipts', 'receipts', 'receipts.created_at > :lastCollectionTime', { lastCollectionTime: lastCollection?.timestamp || new Date(0)})
+    .select('user.id', 'id')
+    .addSelect('user.username', 'username')
+    .addSelect('MIN(receipts.created_at)', 'firstReceipt')
+    .addSelect('SUM(receipts.total)', 'total')
+    .groupBy('user.id')
+    .orderBy('firstReceipt', 'ASC')
+    .getRawMany();
+
+    const resultWithISO = employeesRevenue.map(employee => ({
+        ...employee,
+        firstReceipt: employee.firstReceipt ? new Date(employee.firstReceipt+'Z').toISOString() : null
+    }));
+
+    res.json({total, lastCollection, employeesRevenue: resultWithISO, success: true})
+}
+
+export const collectionsList = async(req: Request, res: Response)=>{
+    const {page=1, limit=10} = req.query;
+
+    const [collections, total] = await collectionRepo
+    .createQueryBuilder('collection')
+    .leftJoinAndSelect('collection.collected_by', 'collected_by')
+    .orderBy('collection.timestamp', 'DESC')
+    .take((Number(page)-1)*Number(limit))
+    .limit(Number(limit))
+    .getManyAndCount();
+
+    res.json({collections, total, success: true})
 }

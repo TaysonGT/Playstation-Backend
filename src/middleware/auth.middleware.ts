@@ -5,14 +5,29 @@ import { myDataSource } from '../app-data-source';
 
 const userRepo = myDataSource.getRepository(User)
 
-export const auth = async (req: Request, res: Response, next: NextFunction) => {
+export interface AuthRequest extends Request {
+    user?: {
+        id: string;
+        role: string;
+        username: string;
+    };
+}
+
+export const auth = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const token = req.headers.authorization?.split(' ')[1]
     if(!token){ 
         res.json({success: false, message: "You're not signed in"})
         return;
     }
     const verify = jwt.verify(token, "tayson")
-    verify? next() : res.json({message: "Invalid Session! Please Logout and Sign In again...", success: false})
+    if(verify){
+      req.user = {
+        id: (verify as any).user_id,
+        role: (verify as any).role,
+        username: (verify as any).username
+      }
+      next()
+    } else res.json({message: "Invalid Session! Please Logout and Sign In again...", success: false})
 }
 
 export const isAdmin = async (req: Request, res: Response, next: NextFunction) => {

@@ -5,11 +5,10 @@ import { Device } from "../entity/device.entity";
 import { TimeOrder } from "../entity/time-order.entity";
 import { Session } from '../entity/session.entity';
 import { Receipt } from "../entity/reciept.entity";
-import { User } from "../entity/user.entity";
+import { AuthRequest } from "../middleware/auth.middleware";
 
 const sessionRepo = myDataSource.getRepository(Session)
 const deviceRepo = myDataSource.getRepository(Device)
-const userRepo = myDataSource.getRepository(User)
 const timeOrderRepo = myDataSource.getRepository(TimeOrder)
 const receiptRepo = myDataSource.getRepository(Receipt)
 
@@ -184,8 +183,7 @@ const addSession = async (req: Request, res: Response) => {
   res.json({ success: true, session, updated, message: "تم بدأ الجهاز بنجاح" })
 }
 
-const endSession = async (req: Request, res: Response) => {
-  const cashier_id = req.headers.user_id?.toString().split(' ')[1];
+const endSession = async (req: AuthRequest, res: Response) => {
   const { id } = req.params
 
   let deviceStatus = false
@@ -209,12 +207,14 @@ const endSession = async (req: Request, res: Response) => {
     return;
   }
   
-  const cashier = await userRepo.findOne({ where: { id: cashier_id } })
+  const cashier = req.user
   
   if (!cashier) {
     res.json({ success: false, message: "مستخدم غير موجود" })
     return;
   }
+
+  console.log(cashier)
 
   // UPDATE DEVICE STATE
   const deviceData: addDeviceDto = Object.assign({ ...session.device, name: session.device.name, type: session.device.type, status: deviceStatus })
@@ -248,7 +248,7 @@ const endSession = async (req: Request, res: Response) => {
 
   // TIME ORDERS RECEIPT
   const receipt = receiptRepo.create({
-    cashier, 
+    cashier: {id: cashier.id}, 
     total,
     device: session.device,
     orders: session.orders,
