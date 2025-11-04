@@ -84,20 +84,40 @@ export const currentBalance = async(req: Request, res: Response)=>{
 }
 
 export const cashReport = async(req: Request, res: Response)=>{
-    const lastCollection = await collectionRepo
+    const {collection_id} = req.query;
+
+    const collections = await collectionRepo
     .createQueryBuilder('collection')
+    .where(collection_id?'collection.timestamp <= (SELECT timestamp FROM cash_collections WHERE id = :collection_id)':'1=1', { collection_id })
     .orderBy('collection.timestamp', 'DESC')
-    .getOne();
+    .limit(collection_id?2:1)
+    .getMany()
 
     const finances = await receiptRepo.createQueryBuilder('receipts')
     .select('SUM(receipts.total)', 'total')
-    .where('receipts.created_at > :lastCollectionTime', { lastCollectionTime: lastCollection?.timestamp || new Date(0)})
+    .where('receipts.created_at > :previousCollectionTime AND receipts.created_at < :selectedCollectionTime', 
+        collection_id?{ 
+            previousCollectionTime: collections[1]?.timestamp.toISOString() || new Date(0).toISOString(), 
+            selectedCollectionTime: collections[0]?.timestamp.toISOString()||new Date().toISOString()
+        }:{
+            previousCollectionTime: collections[0]?.timestamp.toISOString() || new Date(0).toISOString(), 
+            selectedCollectionTime: new Date().toISOString()
+        }
+    )
     .getRawOne();
 
-    const total = (finances.total? parseFloat(finances.total): 0) + (lastCollection?.float_remaining || 0);
+    const total = (finances.total? parseFloat(finances.total): 0) + (collections[1]?.float_remaining || 0);
 
     const employeesRevenue = await userRepo.createQueryBuilder('user')
-    .leftJoinAndSelect('user.receipts', 'receipts', 'receipts.created_at > :lastCollectionTime', { lastCollectionTime: lastCollection?.timestamp || new Date(0)})
+    .leftJoinAndSelect('user.receipts', 'receipts', 'receipts.created_at > :previousCollectionTime AND receipts.created_at < :selectedCollectionTime', 
+        collection_id?{ 
+            previousCollectionTime: collections[1]?.timestamp.toISOString() || new Date(0).toISOString(), 
+            selectedCollectionTime: collections[0]?.timestamp.toISOString()||new Date().toISOString()
+        }:{
+            previousCollectionTime: collections[0]?.timestamp.toISOString() || new Date(0).toISOString(), 
+            selectedCollectionTime: new Date().toISOString()
+        }
+    )
     .select('user.id', 'id')
     .addSelect('user.username', 'username')
     .addSelect('MIN(receipts.created_at)', 'firstReceipt')
@@ -111,7 +131,15 @@ export const cashReport = async(req: Request, res: Response)=>{
         firstReceipt: employee.firstReceipt ? new Date(employee.firstReceipt+'Z').toISOString() : null
     }));
 
-    res.json({total, lastCollection, employeesRevenue: resultWithISO, success: true})
+    res.json({
+        total, 
+        selectedCollection: collection_id?collections[0]:null,
+        lastCollection: collection_id?collections[1]:collections[0],
+        start: collections[collection_id?1:0]?.timestamp, 
+        end: collection_id?collections[0]?.timestamp:new Date().toISOString(), 
+        employeesRevenue: resultWithISO, 
+        success: true
+    })
 }
 
 export const collectionsList = async(req: Request, res: Response)=>{
