@@ -106,7 +106,7 @@ export const cashReport = async(req: Request, res: Response)=>{
     )
     .getRawOne();
 
-    const total = (finances.total? parseFloat(finances.total): 0) + (collections[1]?.float_remaining || 0);
+    const total = (finances.total? parseFloat(finances.total): 0) + (collections[collection_id?1:0]?.float_remaining || 0);
 
     const employeesRevenue = await userRepo.createQueryBuilder('user')
     .leftJoinAndSelect('user.receipts', 'receipts', 'receipts.created_at > :previousCollectionTime AND receipts.created_at < :selectedCollectionTime', 
