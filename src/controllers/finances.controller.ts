@@ -47,6 +47,20 @@ const getMonthsList = (date: Date)=>{
     return months;
 }
 
+const getMonthDays = (month: number, year: number)=>{
+    if(new Date(year,month+1,0)>new Date()){
+        return new Date().getDate()
+    }
+    return new Date(year,month+1,0).getDate()
+}
+
+const getYearMonths = (year: number)=>{
+    if(new Date(year+1,1,0)>new Date()){
+        return new Date().getMonth()+1
+    }
+    return new Date(year+1,1,0).getMonth()+1
+}
+
 const statisticFinances = async (req:Request, res:Response)=>{
     const { user } = req.params;
     const { date } = req.query;
@@ -512,7 +526,7 @@ const collectiveRevenue = async (req:Request, res:Response)=>{
             new Date(order.receipt.created_at) < new Date(new Date(date as string).getFullYear(), 0, 1) &&
             new Date(order.receipt.created_at) >= new Date(new Date(date as string).getFullYear()-1, 0, 1)
     ).reduce((total,order)=>total+order.cost,0)
-    
+
     const previousTotalSession = previousReceipts.filter(r=>r.type==='session').reduce((a,receipt)=>receipt.total+a,0)
     const previousTotalOuter = previousReceipts.filter(r=>r.type==='outer').reduce((a,receipt)=>receipt.total+a,0)
     const previousTotal = previousReceipts.reduce((a,receipt)=>receipt.total+a,0)
@@ -525,11 +539,55 @@ const collectiveRevenue = async (req:Request, res:Response)=>{
     const totalTime = currentTimeOrders.reduce((total,order)=>(new Date(order.ended_at).getTime() - new Date(order.started_at).getTime())+total,0)
     const hours = Math.round(totalTime / (1000 * 60 * 60))
 
-    const playingGrowthLoss = previousPlaying? Math.round((totalPlaying-previousPlaying)*100/(previousPlaying)) : 0
-    const productsGrowthLoss = previousProductsTotal? Math.round((totalProducts-previousProductsTotal)*100/(previousProductsTotal)) : 0
-    const totalGrowthLoss = previousTotal? Math.round((total-previousTotal)*100/previousTotal) : 0
-    const sessionsGrowthLoss = previousTotalSession? Math.round((totalSession-previousTotalSession)*100/previousTotalSession) : 0
-    const outerGrowthLoss = previousTotalOuter? Math.round((totalOuter-previousTotalOuter)*100/previousTotalOuter) : 0
+    let playingGrowthLoss = previousPlaying? Math.round((totalPlaying-previousPlaying)*100/(previousPlaying)) : 0
+    let productsGrowthLoss = previousProductsTotal? Math.round((totalProducts-previousProductsTotal)*100/(previousProductsTotal)) : 0
+    let totalGrowthLoss = previousTotal? Math.round((total-previousTotal)*100/previousTotal) : 0
+    let sessionsGrowthLoss = previousTotalSession? Math.round((totalSession-previousTotalSession)*100/previousTotalSession) : 0
+    let outerGrowthLoss = previousTotalOuter? Math.round((totalOuter-previousTotalOuter)*100/previousTotalOuter) : 0
+    
+    
+    if(period==='monthly'){
+        const previousMonthDays = getMonthDays(new Date(date as string).getMonth()-1, new Date(date as string).getFullYear())
+        const thisMonthDays = getMonthDays(new Date(date as string).getMonth(), new Date(date as string).getFullYear())
+        
+        const playingDailyRatio = previousPlaying/previousMonthDays
+        const productsDailyRatio = previousProductsTotal/previousMonthDays
+        const totalDailyRatio = previousTotal/previousMonthDays
+        const sessionsDailyRatio = previousTotalSession/previousMonthDays
+        const outerDailyRatio = previousTotalOuter/previousMonthDays
+        
+        const estimatedPlaying = playingDailyRatio * thisMonthDays
+        const estimatedProducts = productsDailyRatio * thisMonthDays
+        const estimatedTotal = totalDailyRatio * thisMonthDays
+        const estimatedSessions = sessionsDailyRatio * thisMonthDays
+        const estimatedOuter = outerDailyRatio * thisMonthDays
+        
+        playingGrowthLoss = previousPlaying? Math.round((totalPlaying-estimatedPlaying)*100/estimatedPlaying) : 0
+        productsGrowthLoss = previousProductsTotal? Math.round((totalProducts-estimatedProducts)*100/estimatedProducts) : 0
+        totalGrowthLoss = previousTotal? Math.round((total-estimatedTotal)*100/estimatedTotal) : 0
+        sessionsGrowthLoss = previousTotalSession? Math.round((totalSession-estimatedSessions)*100/estimatedSessions) : 0
+        outerGrowthLoss = previousTotalOuter? Math.round((totalOuter-estimatedOuter)*100/estimatedOuter) : 0
+    }else{
+        const thisYearMonths = getYearMonths(new Date(date as string).getFullYear())
+
+        const playingMonthlyRatio = previousPlaying/12
+        const productsMonthlyRatio = previousProductsTotal/12
+        const totalMonthlyRatio = previousTotal/12
+        const sessionsMonthlyRatio = previousTotalSession/12
+        const outerMonthlyRatio = previousTotalOuter/12
+
+        const estimatedPlaying = playingMonthlyRatio * thisYearMonths
+        const estimatedProducts = productsMonthlyRatio * thisYearMonths
+        const estimatedTotal = totalMonthlyRatio * thisYearMonths
+        const estimatedSessions = sessionsMonthlyRatio * thisYearMonths
+        const estimatedOuter = outerMonthlyRatio * thisYearMonths
+        
+        playingGrowthLoss = previousPlaying? Math.round((totalPlaying-estimatedPlaying)*100/estimatedPlaying) : 0
+        productsGrowthLoss = previousProductsTotal? Math.round((totalProducts-estimatedProducts)*100/estimatedProducts) : 0
+        totalGrowthLoss = previousTotal? Math.round((total-estimatedTotal)*100/estimatedTotal) : 0
+        sessionsGrowthLoss = previousTotalSession? Math.round((totalSession-estimatedSessions)*100/estimatedSessions) : 0
+        outerGrowthLoss = previousTotalOuter? Math.round((totalOuter-estimatedOuter)*100/estimatedOuter) : 0
+    }
 
     const datesList = period === 'monthly'?
         getDaysList(new Date(date as string))
@@ -620,7 +678,20 @@ const employeesRevenue = async (req:Request, res:Response)=>{
             new Date(receipt.created_at) >= new Date(new Date(date as string).getFullYear()-1, 0, 1)
         ).reduce((total, receipt)=> total+receipt.total,0)
         
-        const growthLoss = previousRevenue? Math.round((revenue-previousRevenue)*100/previousRevenue) : 0
+        let growthLoss = 0
+        if(period==='monthly'){
+            const thisMonthDays = getMonthDays(new Date(date as string).getMonth(), new Date(date as string).getFullYear())
+            const previousMonthDays = getMonthDays(new Date(date as string).getMonth()-1, new Date(date as string).getFullYear())
+            
+            const dailyRatio = previousRevenue/previousMonthDays
+            const estimatedRevenue = dailyRatio * thisMonthDays
+            growthLoss = previousRevenue? Math.round((revenue-estimatedRevenue)*100/estimatedRevenue) : 0
+        }else{
+            const thisYearMonths = getYearMonths(new Date(date as string).getFullYear())
+            const monthlyRatio = previousRevenue/12
+            const estimatedRevenue = monthlyRatio * thisYearMonths
+            growthLoss = previousRevenue? Math.round((revenue-estimatedRevenue)*100/estimatedRevenue) : 0
+        }
 
         const percent = parseFloat((revenue*100/total).toFixed(1))
         

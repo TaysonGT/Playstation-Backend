@@ -27,6 +27,7 @@ const sessionOrders = async (req:Request, res:Response)=>{
     .leftJoinAndSelect('session.orders', 'orders')
     .leftJoinAndSelect('orders.product', 'product')
     .leftJoinAndSelect('session.time_orders', 'time_orders')
+    .leftJoinAndSelect('time_orders.device', 'device')
     .where('session.id = :id', {id: sessionId})
     .getOne()
 
@@ -97,6 +98,11 @@ const addOrder = async(req: Request, res: Response)=>{
     if(!session){
         res.json({success: false, message: "الجلسة غير موجودة"})
         return;
+    }
+
+    if(product.stock < quantity){
+        res.json({success:false, message: "الكمية المطلوبة غير متوفرة في المخزن"})
+        return
     }
 
     const existingOrderedProd = await orderRepo.findOne({where:{product: {id:product_id}, session: {id: sessionId}}})
