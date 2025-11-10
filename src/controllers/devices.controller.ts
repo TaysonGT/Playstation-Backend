@@ -27,12 +27,10 @@ const allDevices = async (req:Request, res:Response)=>{
     .innerJoinAndSelect('devices.type', 'type')
     .getMany()
 
-    const deviceTypes = await devTypeRepo.find()
-
     const availableDevices = devices.filter((device)=> device.status === false)
     const unavailableDevices = devices.filter((device)=> device.status === true)
 
-    res.json({devices: devices? devices.sort((a,b)=>a.name.localeCompare(b.name)): [], availableDevices, unavailableDevices, deviceTypes, success: true})
+    res.json({devices: devices? devices.sort((a,b)=>a.name.localeCompare(b.name)): [], availableDevices, unavailableDevices, success: true})
 }
 
 const addDevice = async(req: Request, res: Response)=>{
@@ -79,16 +77,27 @@ const updateDevice = async (req: Request, res:Response) =>{
 
 const deleteDevice = async (req:Request, res:Response) =>{
     const {id} = req.params
-    const device = await deviceRepo.findOne({where: {id}})
-    if(device){
-        if(device.status == false){
-            const deleted = await deviceRepo.remove(device)
-            res.json({deleted, message: "تمت إزالة الجهاز بنجاح", success:true})
-        }else res.json({message: "هذا الجهاز مشغول حاليا برجاء اغلاقه أولا", success: false})
-    } else{
+    const device = await deviceRepo.findOne({where: {id}, relations: {session: true}})
+
+    if(!device){
         res.json({message: "حدث خطأ", success: false})
+        return
     }
+
+    if(device.session){
+        res.json({message: "هذا الجهاز مشغول، برجاء اغلاقه أولا", success: false})
+        return
+    }
+
+    device.timeOrders = []
+    device.receipts = []
+
+    await deviceRepo.save(device) 
+
+    const deleted = await deviceRepo.remove(device)
+    res.json({deleted, message: "تمت إزالة الجهاز بنجاح", success:true})
 }
+
 
 const addDeviceType = async (req:Request, res:Response) =>{
     const {name, single_price, multi_price} = req.body
@@ -127,7 +136,7 @@ const updateDeviceType = async (req:Request, res:Response) =>{
 const allDeviceTypes = async (req:Request, res:Response) =>{
     const deviceTypes = await devTypeRepo.find()
     if(!deviceTypes.length){
-        res.json({message: "برجاء اضافة نوع جهاز من صفحة الاعدادات", success: false})
+        res.json({message: "برجاء اضافة نوع جهاز", success: false})
         return;
     }
     res.json({deviceTypes, success: true})         
@@ -143,6 +152,24 @@ const findDeviceType = async (req:Request, res:Response) =>{
     res.json({deviceType, success: true})
 }
 
+const deleteDeviceType = async (req:Request, res:Response) =>{
+    const {id} = req.params
+    const deviceType = await devTypeRepo.findOne({where: {id}, relations: {devices: true}})
+    
+    if(!deviceType){
+        res.json({message: "لم يتم العثور على نوع الجهاز", success: false})
+        return;
+    }
+
+    if(deviceType.devices?.length > 0){
+        res.json({message: "فشل الحذف، هناك أجهزة مرتبطة بهذا النوع", success: false})
+        return
+    }
+  
+    const deleted = await devTypeRepo.remove(deviceType)
+    res.json({deleted, message: "تمت إزالة النوع بنجاح", success:true})
+}
+
 
 export {
     findDevice,
@@ -154,4 +181,5 @@ export {
     addDevice,
     updateDevice,
     deleteDevice,
+    deleteDeviceType,
 }

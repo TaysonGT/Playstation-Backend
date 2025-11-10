@@ -12,7 +12,7 @@ export class TimeOrder {
     session: Session;
     
     @ManyToOne(()=>Device, (device)=>device.timeOrders)
-    device: Device;
+    device?: Device|null;
 
     @ManyToOne(()=>Receipt, (receipt)=>receipt.time_orders)
     receipt: Receipt;

@@ -39,6 +39,11 @@ const changeDevice = async (req: Request, res: Response) => {
     res.json({ success: false, message: "مش فاهم حاجة" })
     return;
   }
+
+  if (!session.device.type) {
+      res.json({ success: false, message: "لا يوجد نوع جهاز" })
+      return;
+    }
  
   if (session && session?.time_type == "time" && new Date(session?.ended_at) < new Date()) {
     res.json({ message: " لقد انتهى وقت هذا الجهاز بالفعل", success: false })
@@ -113,6 +118,11 @@ const changePlayType = async (req: Request, res: Response) => {
     
     if (!session.device) {
       res.json({ success: false, message: "مش فاهم حاجة" })
+      return;
+    }
+
+    if (!session.device.type) {
+      res.json({ success: false, message: "لا يوجد نوع جهاز" })
       return;
     }
     
@@ -206,6 +216,11 @@ const endSession = async (req: AuthRequest, res: Response) => {
     res.json({ success: false, message: "مش فاهم حاجة" })
     return;
   }
+
+  if (!session.device.type) {
+    res.json({ success: false, message: "لا يوجد نوع جهاز" })
+    return;
+  }
   
   const cashier = req.user
   
@@ -213,8 +228,6 @@ const endSession = async (req: AuthRequest, res: Response) => {
     res.json({ success: false, message: "مستخدم غير موجود" })
     return;
   }
-
-  console.log(cashier)
 
   // UPDATE DEVICE STATE
   const deviceData: addDeviceDto = Object.assign({ ...session.device, name: session.device.name, type: session.device.type, status: deviceStatus })

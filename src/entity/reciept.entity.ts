@@ -23,7 +23,7 @@ export class Receipt{
     orders: Order[];
 
     @ManyToOne(()=>Device, (device)=>device.receipts)
-    device: Device
+    device?: Device
 
     @OneToMany(()=>TimeOrder, (order)=>order.receipt)
     time_orders: TimeOrder[];
