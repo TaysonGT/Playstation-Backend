@@ -10,17 +10,14 @@ const productRepo = myDataSource.getRepository(Product)
 const orderRepo = myDataSource.getRepository(Order)
 
 const createOuterReceipt = async (req:AuthRequest, res:Response)=>{
-  const { orderData } = req.body;
+  const { orders } = req.body;
   
-  if (orderData.length < 1) {
+  if (orders.length < 1) {
     res.json({ success: false, message: "لا يوجد طلبات" });
     return
   }
 
   const products = await productRepo.find();
-
-  let stockCheck = true;
-  let total = 0;
 
   const cashier = req.user
 
@@ -29,31 +26,25 @@ const createOuterReceipt = async (req:AuthRequest, res:Response)=>{
     return;
   }
 
-  const ordersWithProduct:{product_id: string, quantity: number, product: Product}[] = orderData.map((order:{product_id: string, quantity: number})=>{
-    const product = products.find((prod) => prod.id == order.product_id) 
+  for(const order of orders){
+    const product = products.find((prod) => prod.id == order.product.id) 
 
     if(!product) {
-      stockCheck = false
+      res.json({ success: false, message: `لم يتم العثور على المنتج: ${order.product?.name}`})
       return
     }
-
-    if(product.stock<order.quantity) {
-      stockCheck = false
+    if(!product || product?.stock<order.quantity) {
+      res.json({ success: false, message: `كمية ${product?.name} المتاحة اقل من الكمية المطلوبة`})
       return
     }
-
-    return {...order, product}
-  })
-
-  if(!stockCheck) {
-    res.json({ success: false, message: "الكمية المتاحة اقل من الكمية المطلوبة" })
-    return;
   }
 
   const receipt = recieptRepo.create({cashier: {id: cashier.id}, type: "outer", total: 0});
   await recieptRepo.save(receipt);
 
-  for(let order of ordersWithProduct){
+  let total = 0;
+
+  for(let order of orders){
     total += order.product.price * order.quantity;
     const stock = order.product.stock - order.quantity;
     const updatedProduct = Object.assign(order.product, { stock });
@@ -123,6 +114,33 @@ const allReceipts = async (req:Request, res:Response)=>{
     .createQueryBuilder('receipts')
     .leftJoinAndSelect('receipts.time_orders', 'time_orders')
     .leftJoinAndSelect('receipts.cashier', 'cashier')
+    .leftJoinAndSelect('receipts.orders', 'orders')
+    .leftJoinAndSelect('receipts.device', 'receiptDevice')
+    .leftJoinAndSelect('time_orders.device', 'timeOrderDevice')
+    .leftJoinAndSelect('orders.product', 'product')
+    .orderBy('receipts.created_at', 'DESC')
+    .skip(numerizedLimit*(numerizedPage-1))
+    .take(numerizedLimit)
+
+    if(type){
+      query.where('receipts.type = :type', {type})
+    }
+
+    const [receipts, total] = await query
+    .getManyAndCount()
+
+    res.json({receipts, total, page: numerizedPage, limit: numerizedLimit})
+}
+
+export const previousReceipts = async (req:AuthRequest, res:Response)=>{
+    const {page = '1', limit = '10', type} = req.query
+    const numerizedLimit = parseInt(limit as string)
+    const numerizedPage = parseInt(page as string)
+
+    const query = recieptRepo
+    .createQueryBuilder('receipts')
+    .leftJoinAndSelect('receipts.time_orders', 'time_orders')
+    .innerJoinAndSelect('receipts.cashier', 'cashier', 'cashier.id = :cashierId', {cashierId: req.user?.id})
     .leftJoinAndSelect('receipts.orders', 'orders')
     .leftJoinAndSelect('receipts.device', 'receiptDevice')
     .leftJoinAndSelect('time_orders.device', 'timeOrderDevice')

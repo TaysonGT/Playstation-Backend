@@ -16,7 +16,7 @@ export class Device{
     status: boolean;
     
     @OneToMany(()=>TimeOrder, (timeOrders)=>timeOrders.device)
-    timeOrders: TimeOrder;
+    timeOrders: TimeOrder[];
 
     @ManyToOne(()=>DeviceType, (deviceType)=>deviceType.devices)
     type: DeviceType;
