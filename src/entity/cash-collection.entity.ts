@@ -24,8 +24,8 @@ export class CashCollection{
     @Column()
     float_remaining: number
     
-    @Column()
-    notes: string;
+    @Column({nullable:true})
+    notes?: string;
     
     @CreateDateColumn()
     timestamp: Date

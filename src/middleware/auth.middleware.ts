@@ -1,9 +1,5 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import { User } from '../entity/user.entity';
-import { myDataSource } from '../app-data-source';
-
-const userRepo = myDataSource.getRepository(User)
 
 export interface AuthRequest extends Request {
     user?: {
@@ -30,21 +26,20 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction) 
     } else res.json({message: "Invalid Session! Please Logout and Sign In again...", success: false})
 }
 
-export const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.toString().split(' ')[1];  
-  if(!token) {
-    res.json({ message: "ليست هناك جلسة", success: false });
+export const isAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const user = req.user
+
+  console.log(user)
+
+  if(!user){
+    res.status(401).json({ message: "برجاء تسجيل الدخول", success: false });
     return;
   }
 
-  const decoded:any = jwt.verify(token, 'tayson')
-
-  const user = await userRepo.findOne({where:{id: decoded.user_id}});
-
-  if (!user) {
-    res.json({ message: "هذا المستخدمم غير موجود", success: false });
+  if(user.role!=='admin') {
+    res.status(401).json({success: false,  message: "هذا المستخدم لا يملك الصلاحيات لفعل هذا الأمر"})
     return;
   }
 
-  user&& user.role !=='admin'? res.json({success: false,  message: "هذا المستخدم لا يملك الصلاحيات لفعل هذا الأمر"}) : next()
+  next()
 }
