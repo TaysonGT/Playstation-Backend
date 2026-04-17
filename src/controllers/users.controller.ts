@@ -35,7 +35,7 @@ const addUser = async (req: Request, res: Response) => {
 
   const user = userRepo.create({ username: trimmedUser, password: trimmedPass, role: users.length===0? 'admin' : role });
   const results = await userRepo.save(user);
-  const token = jwt.sign({ user_id: user.id, username: user.username }, "tayson", { expiresIn: '8h' })
+  const token = jwt.sign({ user_id: user.id, username: user.username, role: user.role }, "tayson", { expiresIn: '8h' })
 
   res.json({ 
     results, message: "تمت إضافة المستخدم بنجاح", 
@@ -123,7 +123,7 @@ const userLogin = async (req: Request, res: Response) => {
     return;
   }
 
-  const token = jwt.sign({ user_id: user.id, username: user.username }, "tayson", { expiresIn: '8h' })
+  const token = jwt.sign({ user_id: user.id, username: user.username, role: user.role }, "tayson", { expiresIn: '8h' })
   res.json({ 
     message: "تم تسجيل الدخول بنجاح ", 
     success: true, 

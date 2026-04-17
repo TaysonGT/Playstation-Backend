@@ -5,9 +5,11 @@ import express from 'express';
 const devicesRouter = express.Router()
 
 devicesRouter.get('/', allDevices) 
-devicesRouter.post('/', isAdmin, addDevice)
-devicesRouter.post('/:id', isAdmin, updateDevice)
-devicesRouter.delete('/:id', isAdmin, deleteDevice)
 devicesRouter.get('/:id', findDevice)
+
+devicesRouter.use(isAdmin)
+devicesRouter.post('/', addDevice)
+devicesRouter.post('/:id', updateDevice)
+devicesRouter.delete('/:id', deleteDevice)
 
 export default devicesRouter;
