@@ -14,7 +14,7 @@ const receiptRepo = myDataSource.getRepository(Receipt)
 
 const findSession = async (req: Request, res: Response) => {
   const { id } = req.params
-  const session = await sessionRepo.find({ where: { id } })
+  const session = await sessionRepo.find({ where: {id: id as string} })
   session ? res.json({ success: true, session }) : res.json({ success: false, message: "حدث خطا" })
 }
 
@@ -163,8 +163,8 @@ const allSessions = async (req: Request, res: Response) => {
 const addSession = async (req: Request, res: Response) => {
   const { play_type, time_type, end_time } = req.body;
   const { id } = req.params
-  const device = await deviceRepo.findOne({ where: { id } })
-  const checkExists = await sessionRepo.exists({ where: { device_id: id, status: 'running' } })
+  const device = await deviceRepo.findOne({ where: {id: id as string} })
+  const checkExists = await sessionRepo.exists({ where: { device_id: id as string, status: 'running' } })
 
   if (checkExists) {
     res.json({ message: "هذه الجلسة بدأت بالفعل", succes: false, warning: true })

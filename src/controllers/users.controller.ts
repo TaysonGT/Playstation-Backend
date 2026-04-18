@@ -47,14 +47,14 @@ const addUser = async (req: Request, res: Response) => {
 
 const findUser = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const user = await userRepo.findOne({ where: { id } });
+  const user = await userRepo.findOne({ where: {id: id as string} });
   user ? res.json({ user, success:true }) : res.json({ message: "هذا المستخدم غير موجود", success: false });
 };
 
 const deleteUser = async (req: Request, res: Response) => {
   const { id } = req.params;
   const users = await userRepo.find();
-  const user = await userRepo.findOne({ where: { id } });
+  const user = await userRepo.findOne({ where: {id: id as string} });
   if (users.length < 2) {
     res.json({ message: "لا يوجد مستخدمين آخرين ", success: false });
   } else if (user) {

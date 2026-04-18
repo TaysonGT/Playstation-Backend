@@ -12,10 +12,10 @@ const devTypeRepo = myDataSource.getRepository(DeviceType)
 
 const findDevice = async (req:Request, res:Response)=>{
     const {id} = req.params
-    const device = await deviceRepo.findOne({where: {id}})
+    const device = await deviceRepo.findOne({where: {id: id as string}})
 
     if(device) {
-        const session = await sessionRepo.find({where: {device_id: id}})
+        const session = await sessionRepo.find({where: {device_id: id as string}})
         res.json({device, session, success: true}) 
     }else res.json({message: "هذا الجهاز غير موجود", success: false})
 }
@@ -64,7 +64,7 @@ const updateDevice = async (req: Request, res:Response) =>{
     let status = false
     
     let deviceData:addDeviceDto = {name, type, status}
-    const device = await deviceRepo.findOne({where: {id}})
+    const device = await deviceRepo.findOne({where: {id: id as string}})
 
     if(device){
         const updatedDevice = Object.assign(device, deviceData)
@@ -77,7 +77,7 @@ const updateDevice = async (req: Request, res:Response) =>{
 
 const deleteDevice = async (req:Request, res:Response) =>{
     const {id} = req.params
-    const device = await deviceRepo.findOne({where: {id}, relations: {session: true}})
+    const device = await deviceRepo.findOne({where: {id: id as string}, relations: {session: true}})
 
     if(!device){
         res.json({message: "حدث خطأ", success: false})
@@ -112,19 +112,23 @@ const addDeviceType = async (req:Request, res:Response) =>{
 
 const updateDeviceType = async (req:Request, res:Response) =>{
     const {id} = req.params
-    const {singlePrice, multiPrice} = req.body
-    const deviceType = await devTypeRepo.findOne({where: {id}})
-    let currentSinglePrice = null
-    let currentMultiPrice = null
+    const {single_price, multi_price} = req.body
+    const deviceType = await devTypeRepo.findOne({where: {id: id as string}})
+    
     if(!deviceType) {
         res.json({succes:false, message: "حدث خطأ"})
         return;
     }
-    singlePrice ? currentSinglePrice = singlePrice : currentSinglePrice = deviceType.single_price
-    multiPrice ? currentMultiPrice = multiPrice : currentMultiPrice = deviceType.multi_price
-    const savedDeviceType = await devTypeRepo.save(Object.assign(deviceType, {single_price: currentSinglePrice, multi_price: currentMultiPrice}))
+
+    const currentSinglePrice = single_price? single_price : deviceType.single_price
+    const currentMultiPrice = multi_price? multi_price : deviceType.multi_price
     
-    if(!singlePrice&&!multiPrice){
+    const savedDeviceType = await devTypeRepo.save(Object.assign(deviceType, {
+        single_price: currentSinglePrice, 
+        multi_price: currentMultiPrice
+    }))
+    
+    if(!single_price&&!multi_price){
         res.json({success: false, message: "لم يتم إدخال أي بيانات"})
         return
     }
@@ -144,7 +148,7 @@ const allDeviceTypes = async (req:Request, res:Response) =>{
 
 const findDeviceType = async (req:Request, res:Response) =>{
     const {id} = req.params
-    const deviceType = await devTypeRepo.findOne({where:{id}})
+    const deviceType = await devTypeRepo.findOne({where:{id: id as string}})
     if(!deviceType){
         res.json({message: "حدث خطأ", success: false})
         return;
@@ -154,7 +158,7 @@ const findDeviceType = async (req:Request, res:Response) =>{
 
 const deleteDeviceType = async (req:Request, res:Response) =>{
     const {id} = req.params
-    const deviceType = await devTypeRepo.findOne({where: {id}, relations: {devices: true}})
+    const deviceType = await devTypeRepo.findOne({where: {id: id as string}, relations: {devices: true}})
     
     if(!deviceType){
         res.json({message: "لم يتم العثور على نوع الجهاز", success: false})

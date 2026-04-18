@@ -29,8 +29,6 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction) 
 export const isAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const user = req.user
 
-  console.log(user)
-
   if(!user){
     res.status(401).json({ message: "برجاء تسجيل الدخول", success: false });
     return;
