@@ -9,8 +9,8 @@
       "emitDecoratorMetadata": true,
       "experimentalDecorators": true,
       "importHelpers": true,
-      "module": "commonjs",
-      "moduleResolution": "node",
+      "module": "node16",
+      "moduleResolution": "node16",
       "noFallthroughCasesInSwitch": true,
       "noImplicitAny": true,
       "noImplicitReturns": true,
@@ -30,12 +30,6 @@
         "./types",
     ]
   },
-  "include": [
-    "sample",
-    "src",
-    "test",
-    "*.ts", "node_modules/express/index.d.ts",
-  ],
   "exclude": [
       "build",
       "node_modules",

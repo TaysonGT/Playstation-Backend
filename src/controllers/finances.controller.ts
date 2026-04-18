@@ -239,7 +239,7 @@ const statisticFinances = async (req:Request, res:Response)=>{
 
 const removeDeduction = async (req:Request, res:Response)=>{
   const { id } = req.params;
-  const deduction = await receiptRepo.findOne({ where: { id } });
+  const deduction = await receiptRepo.findOne({ where: {id: id as string} });
   if (deduction) {
       const deletedFinance = await receiptRepo.remove(deduction);
       deletedFinance && res.json({ message: "تم حذف الخصم بنجاح", success: true });

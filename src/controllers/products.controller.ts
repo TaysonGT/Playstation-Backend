@@ -8,7 +8,7 @@ const productRepo = myDataSource.getRepository(Product)
 
 const findProduct = async (req:Request, res:Response)=>{
     const {id} = req.params
-    const product = await productRepo.find({where: {id}})
+    const product = await productRepo.find({where: {id: id as string}})
     product? res.json({product}) : res.json({message: "هذا المنتج غير موجود"})
 }
 
@@ -41,7 +41,7 @@ const addProduct = async(req: Request, res: Response)=>{
 
 const updateProduct = async (req: Request, res:Response) =>{
     const {id} = req.params
-    const product = await productRepo.findOne({where: {id}})
+    const product = await productRepo.findOne({where: {id: id as string}})
 
     const {name, price, stock} = req.body;
 
@@ -59,7 +59,7 @@ const updateProduct = async (req: Request, res:Response) =>{
 
 const deleteProduct = async (req:Request, res:Response) =>{
     const {id} = req.params
-    const product = await productRepo.findOne({where: {id}})
+    const product = await productRepo.findOne({where: {id: id as string}})
     if(product){
         const deleted = await productRepo.remove(product)
         res.json({success: true, deleted, message: "تمت إزالة المنتج بنجاح"})
@@ -70,7 +70,7 @@ const deleteProduct = async (req:Request, res:Response) =>{
 
 const oneProduct = async (req: Request, res: Response) =>{
     const {id} = req.params
-    const product = await productRepo.findOne({where: {id}})
+    const product = await productRepo.findOne({where: {id: id as string}})
     if(product){
         res.json({product})
     }else{

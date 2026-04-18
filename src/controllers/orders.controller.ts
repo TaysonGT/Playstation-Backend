@@ -87,7 +87,7 @@ const sessionOrders = async (req:Request, res:Response)=>{
 const addOrder = async(req: Request, res: Response)=>{
     const {product_id, quantity} = req.body;
     const {sessionId} = req.params;
-    const session = await sessionRepo.findOne({where:{id: sessionId}, relations:{device:true}})
+    const session = await sessionRepo.findOne({where:{id: sessionId as string}, relations:{device:true}})
     const product = await productRepo.findOne({where:{id: product_id}})
 
     if(!product){
@@ -105,7 +105,7 @@ const addOrder = async(req: Request, res: Response)=>{
         return
     }
 
-    const existingOrderedProd = await orderRepo.findOne({where:{product: {id:product_id}, session: {id: sessionId}}})
+    const existingOrderedProd = await orderRepo.findOne({where:{product: {id:product_id}, session: {id: sessionId as string}}})
     const cost = product.price * quantity;
     let savedOrder: any = {}
     if(existingOrderedProd){
@@ -124,7 +124,7 @@ const addOrder = async(req: Request, res: Response)=>{
 
 const deleteOrder = async(req: Request, res: Response)=>{
     const {id} = req.params
-    const order = await orderRepo.findOne({where: {id}})
+    const order = await orderRepo.findOne({where: {id: id as string}})
     if(!order) {
         res.json({success: false, message: "هذا الطلب غير موجود"})
         return;
