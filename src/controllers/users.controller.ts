@@ -7,23 +7,28 @@ import { addUserDto } from "../dto/add-user.dto";
 const userRepo = myDataSource.getRepository(User)
 
 const addUser = async (req: Request, res: Response) => {
-  const { username, password, role } = req.body;
-  if (!(username && password)) {
+  const { username, password, confirmPassword, role } = req.body;
+  if (!(username && password && confirmPassword)) {
     res.json({ message: "برجاء ادخال جميع البيانات", success: false });
     return;
   }
 
-  const trimmedPass = password.trim();
+  const trimmedPassword = password.trim();
+  const trimmedConfirmPassword = confirmPassword.trim();
   const trimmedUser = username.trim();
   
-  const existingUser = await userRepo.createQueryBuilder("users")
+  const existingUser = await userRepo.createQueryBuilder("users") 
     .where("LOWER(users.username) = LOWER(:query)", {
       query:
         `${trimmedUser}`
     })
     .getOne();
-  if (trimmedPass.length < 6) {
-    res.json({ message: "كلمة السر يجب ان تتكون من 6 حروف على الاقل", success: false });
+  if (trimmedPassword.length < 6) {
+    res.json({ message: "كلمة المرور يجب ان تتكون من 6 حروف على الاقل", success: false });
+    return
+  }
+  if (trimmedPassword!==trimmedConfirmPassword) {
+    res.json({ message: "خطأ في تأكيد كلمة المرور", success: false });
     return
   }
   if (existingUser) {
@@ -33,7 +38,7 @@ const addUser = async (req: Request, res: Response) => {
   
   const users = await userRepo.find();
 
-  const user = userRepo.create({ username: trimmedUser, password: trimmedPass, role: users.length===0? 'admin' : role });
+  const user = userRepo.create({ username: trimmedUser, password: trimmedPassword, role: users.length===0? 'admin' : role });
   const results = await userRepo.save(user);
   const token = jwt.sign({ user_id: user.id, username: user.username, role: user.role }, "tayson", { expiresIn: '8h' })
 
