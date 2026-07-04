@@ -9,8 +9,8 @@
       "emitDecoratorMetadata": true,
       "experimentalDecorators": true,
       "importHelpers": true,
-      "module": "node16",
-      "moduleResolution": "node16",
+      "module": "commonjs",
+      "moduleResolution": "node",
       "noFallthroughCasesInSwitch": true,
       "noImplicitAny": true,
       "noImplicitReturns": true,
@@ -25,11 +25,14 @@
       "forceConsistentCasingInFileNames": true,
       "strict": true,
       "skipLibCheck": true,
-      "esModuleInterop": true,
-      "typeRoots": [
-        "./types",
-    ]
+      "esModuleInterop": true
   },
+  "include": [
+    "sample",
+    "src",
+    "test",
+    "*.ts", "node_modules/express/index.d.ts",
+  ],
   "exclude": [
       "build",
       "node_modules",
