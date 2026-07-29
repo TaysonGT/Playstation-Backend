@@ -19,7 +19,7 @@ import cashRouter from './routes/cash.router';
 // Initializing App
 const app = express()
 
-const allowedOrigins = process.env.NODE_ENV == 'production' ? "https://playstation-frontend.vercel.app" : true
+const allowedOrigins = process.env.NODE_ENV == 'production' ? process.env.FRONTEND_URL : true
 
 // Middlewares 
 app.use(express.json())
