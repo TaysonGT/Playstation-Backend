@@ -13,8 +13,21 @@ const findProduct = async (req:Request, res:Response)=>{
 }
 
 const allProducts = async (req:Request, res:Response)=>{
-    const products = await productRepo.find()
-    res.json({products})
+    const {page = '1', limit = '10'} = req.query
+    const numerizedLimit = parseInt(limit as string)
+    const numerizedPage = parseInt(page as string)
+  
+    const [products, total] = await productRepo.findAndCount({
+      skip: numerizedLimit*(numerizedPage-1),
+      take: numerizedLimit
+    })
+    // const products = await productRepo
+    // .createQueryBuilder('products')
+    // .skip(numerizedLimit*(numerizedPage-1))
+    // .take(numerizedLimit)
+    // .getMany()
+
+    res.json({products, total, page: numerizedPage, pagination: numerizedLimit})
 }
 
 const addProduct = async(req: Request, res: Response)=>{
@@ -61,7 +74,7 @@ const deleteProduct = async (req:Request, res:Response) =>{
     const {id} = req.params
     const product = await productRepo.findOne({where: {id: id as string}})
     if(product){
-        const deleted = await productRepo.remove(product)
+        const deleted = await productRepo.softRemove(product)
         res.json({success: true, deleted, message: "تمت إزالة المنتج بنجاح"})
     } else{
         res.json({success: false, message: "حدث خطأ"})

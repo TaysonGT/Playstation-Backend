@@ -6,45 +6,44 @@ const configRepo = myDataSource.getRepository(HeadConfig)
 
 const saveConfigs = async (req: Request, res: Response)=>{
     const {name, phone, currency} = req.body
-
-    const nameConfig = await configRepo.findOne({where:{key: "name"}})
-    const phoneConfig = await configRepo.findOne({where:{key: "phone"}})
-    const currencyConfig = await configRepo.findOne({where:{key: "currency"}})
     
     let savedName = null;
     let savedPhone = null;
     let savedCurrency = null;
     
     if(name){
-        if(nameConfig){
-            const currentName = Object.assign(nameConfig, {value: name}) 
-            savedName = await configRepo.save(currentName)
-        }else {
-            const currentName = configRepo.create({key: "name", value: name})
-            savedName = await configRepo.save(currentName)
-        }
+      const nameConfig = await configRepo.findOne({where:{key: "name"}})
+      if(nameConfig){
+          const currentName = Object.assign(nameConfig, {value: name}) 
+          savedName = await configRepo.save(currentName)
+      }else {
+          const currentName = configRepo.create({key: "name", value: name})
+          savedName = await configRepo.save(currentName)
+      }
     }
 
     if(phone){
-        if(phoneConfig){
-            const currentPhone = Object.assign(phoneConfig, {value: phone}) 
-            savedPhone = await configRepo.save(currentPhone);
+      const phoneConfig = await configRepo.findOne({where:{key: "phone"}})
+      if(phoneConfig){
+          const currentPhone = Object.assign(phoneConfig, {value: phone}) 
+          savedPhone = await configRepo.save(currentPhone);
 
-        }else {
-            const currentPhone = configRepo.create({key: "phone", value: phone})  
-            savedPhone = await configRepo.save(currentPhone) 
-        }
+      }else {
+          const currentPhone = configRepo.create({key: "phone", value: phone})  
+          savedPhone = await configRepo.save(currentPhone) 
+      }
     }
 
     if(currency){
-        if(currencyConfig){
-            const currentCurrency = Object.assign(currencyConfig, {value: currency}) 
-            savedCurrency = await configRepo.save(currentCurrency);
+      const currencyConfig = await configRepo.findOne({where:{key: "currency"}})
+      if(currencyConfig){
+          const currentCurrency = Object.assign(currencyConfig, {value: currency}) 
+          savedCurrency = await configRepo.save(currentCurrency);
 
-        }else {
-            const currentCurrency = configRepo.create({key: "currency", value: phone})  
-            savedCurrency = await configRepo.save(currentCurrency) 
-        }
+      }else {
+          const currentCurrency = configRepo.create({key: "currency", value: currency})  
+          savedCurrency = await configRepo.save(currentCurrency) 
+      }
     }
 
     if(!phone && !name && !currency){
