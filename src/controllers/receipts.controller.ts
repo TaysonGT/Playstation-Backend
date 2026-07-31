@@ -66,6 +66,7 @@ const createOuterReceipt = async (req:AuthRequest, res:Response)=>{
 const allOuterReceipts = async (req:Request, res:Response)=>{
     const receipts = await recieptRepo
     .createQueryBuilder('receipts')
+    .withDeleted()
     .leftJoinAndSelect('receipts.cashier', 'cashier')
     .leftJoinAndSelect('receipts.orders', 'orders')
     .leftJoinAndSelect('orders.product', 'product')
@@ -79,6 +80,7 @@ const allOuterReceipts = async (req:Request, res:Response)=>{
 const findOuterReceipt = async (req:Request, res:Response)=>{
     const {id} = req.params
     const receipt = await recieptRepo.createQueryBuilder('receipt')
+    .withDeleted()
     .leftJoinAndSelect('receipt.cashier', 'cashier')
     .leftJoinAndSelect('receipt.orders', 'orders')
     .leftJoinAndSelect('orders.product', 'product')
@@ -92,6 +94,7 @@ const findOuterReceipt = async (req:Request, res:Response)=>{
 const allSessionReceipts = async (req:Request, res:Response)=>{
     const receipts = await recieptRepo
     .createQueryBuilder('receipts')
+    .withDeleted()
     .leftJoinAndSelect('receipts.time_orders', 'time_orders')
     .leftJoinAndSelect('receipts.cashier', 'cashier')
     .leftJoinAndSelect('receipts.orders', 'orders')
@@ -112,6 +115,7 @@ const allReceipts = async (req:Request, res:Response)=>{
 
     const query = recieptRepo
     .createQueryBuilder('receipts')
+    .withDeleted()
     .leftJoinAndSelect('receipts.time_orders', 'time_orders')
     .leftJoinAndSelect('receipts.cashier', 'cashier')
     .leftJoinAndSelect('receipts.orders', 'orders')
@@ -139,6 +143,7 @@ export const previousReceipts = async (req:AuthRequest, res:Response)=>{
 
     const query = recieptRepo
     .createQueryBuilder('receipts')
+    .withDeleted()
     .leftJoinAndSelect('receipts.time_orders', 'time_orders')
     .innerJoinAndSelect('receipts.cashier', 'cashier', 'cashier.id = :cashierId', {cashierId: req.user?.id})
     .leftJoinAndSelect('receipts.orders', 'orders')
@@ -162,6 +167,7 @@ export const previousReceipts = async (req:AuthRequest, res:Response)=>{
 const findSessionReceipt = async (req:Request, res:Response)=>{
     const {id} = req.params
     const receipt = await recieptRepo.createQueryBuilder('receipt')
+    .withDeleted()
     .leftJoinAndSelect('receipt.cashier', 'cashier')
     .leftJoinAndSelect('receipt.device', 'receiptDevice')
     .leftJoinAndSelect('receipt.time_orders', 'time_orders')
