@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn } from "typeorm";
 import { Receipt } from "./reciept.entity";
 import { CashCollection } from "./cash-collection.entity";
 import { DeductionType } from "./deduction-type.entity";
@@ -25,4 +25,7 @@ export class User {
 
     @OneToMany(()=>CashCollection, (cashCollection)=> cashCollection.collected_by)
     cashCollections: CashCollection[];
+    
+    @CreateDateColumn()
+    createdAt: Date;
 }

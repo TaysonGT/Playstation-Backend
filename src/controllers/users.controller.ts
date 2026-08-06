@@ -38,7 +38,7 @@ const addUser = async (req: Request, res: Response) => {
   
   const users = await userRepo.find();
 
-  const user = userRepo.create({ username: trimmedUser, password: trimmedPassword, role: users.length===0? 'admin' : role });
+  const user = userRepo.create({ username: trimmedUser, password: trimmedPassword, role: users.length===0? 'admin' : role || 'employee' });
   const results = await userRepo.save(user);
   const token = jwt.sign({ user_id: user.id, username: user.username, role: user.role }, "tayson", { expiresIn: '8h' })
 
@@ -139,8 +139,23 @@ const userLogin = async (req: Request, res: Response) => {
 }
 
 const allUsers = async (req: Request, res: Response) => {
-  const users = await userRepo.find()
-  res.json({ users, success: true })
+  const {page = '1', limit = '10', role} = req.query
+  const numerizedLimit = parseInt(limit as string)
+  const numerizedPage = parseInt(page as string)
+
+  const query = userRepo
+  .createQueryBuilder('users')
+  .skip(numerizedLimit*(numerizedPage-1))
+  .take(numerizedLimit)
+
+  if(role){
+    query.where('users.role = :role', {role})
+  }
+
+  const [users, total] = await query
+  .getManyAndCount()
+
+  res.json({users, total, page: numerizedPage, limit: numerizedLimit})
 }
 
 const checkUsers = async (req: Request, res: Response) => {
