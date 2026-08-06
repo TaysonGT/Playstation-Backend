@@ -153,23 +153,27 @@ const checkUsers = async (req: Request, res: Response) => {
 
 const currentSession = async (req: Request, res: Response) => {
   const token = req.headers.authorization?.toString().split(' ')[1];
-  
-  if(!token) {
-    res.json({ message: "ليست هناك جلسة", success: false });
-    return;
+  try{
+    if(!token) {
+      res.json({ message: "ليست هناك جلسة", success: false });
+      return;
+    }
+
+    const decoded:any = jwt.verify(token, 'tayson')
+
+    const user = await userRepo.findOne({where:{id: decoded.user_id}});
+
+    if (!user) {
+      res.json({ message: "هذا المستخدمم غير موجود", success: false });
+      return;
+    }
+    const {password, ...safeUser} = user
+
+    res.json({ success: true, user: safeUser });
+
+  } catch(error){
+    res.json({message: error.message, success: false})
   }
-
-  const decoded:any = jwt.verify(token, 'tayson')
-
-  const user = await userRepo.findOne({where:{id: decoded.user_id}});
-
-  if (!user) {
-    res.json({ message: "هذا المستخدمم غير موجود", success: false });
-    return;
-  }
-  const {password, ...safeUser} = user
-
-  res.json({ success: true, user: safeUser });
 }
 
 export {
