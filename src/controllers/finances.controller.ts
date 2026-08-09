@@ -2,7 +2,7 @@ import {Response, Request} from "express"
 import { myDataSource } from "../app-data-source";
 import { User } from '../entity/user.entity'
 import { Order } from '../entity/order.entity'
-import { Receipt } from "../entity/reciept.entity";
+import { Receipt } from "../entity/receipt.entity";
 import { TimeOrder } from "../entity/time-order.entity";
 import { Product } from "../entity/product.entity";
 

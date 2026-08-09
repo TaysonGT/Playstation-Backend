@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, ManyToOne, OneToOne } from "typeorm";
-import { Receipt } from "./reciept.entity";
+import { Receipt } from "./receipt.entity";
 import { DeductionType } from "./deduction-type.entity";
 
 @Entity('deductions')

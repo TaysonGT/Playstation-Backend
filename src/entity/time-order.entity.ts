@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne} from "typeorm";
 import { Session } from "./session.entity";
-import { Receipt } from "./reciept.entity";
+import { Receipt } from "./receipt.entity";
 import { Device } from "./device.entity";
 
 @Entity('time_orders')

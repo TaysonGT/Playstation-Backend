@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne} from "typeorm";
 import { Session } from "./session.entity";
 import { Product } from "./product.entity";
-import { Receipt } from "./reciept.entity";
+import { Receipt } from "./receipt.entity";
 
 @Entity('orders')
 export class Order {

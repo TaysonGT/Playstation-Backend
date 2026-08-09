@@ -1,7 +1,7 @@
 import { Response, Request } from "express"
 import { myDataSource } from "../app-data-source";
 import { User } from "../entity/user.entity";
-import { Receipt } from "../entity/reciept.entity";
+import { Receipt } from "../entity/receipt.entity";
 import { CashCollection } from "../entity/cash-collection.entity";
 import { AuthRequest } from "../middleware/auth.middleware";
 

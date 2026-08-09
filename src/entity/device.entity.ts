@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToOne, ManyToOne, OneToMany } from "typeorm";
 import { Session } from "./session.entity";
 import { DeviceType } from "./device-type.entity";
-import { Receipt } from "./reciept.entity";
+import { Receipt } from "./receipt.entity";
 import { TimeOrder } from "./time-order.entity";
 
 @Entity('devices')

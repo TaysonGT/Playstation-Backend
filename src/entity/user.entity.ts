@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn } from "typeorm";
-import { Receipt } from "./reciept.entity";
+import { Receipt } from "./receipt.entity";
 import { CashCollection } from "./cash-collection.entity";
 import { DeductionType } from "./deduction-type.entity";
 

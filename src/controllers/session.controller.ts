@@ -4,7 +4,7 @@ import { addDeviceDto } from "../dto/add-device.dto";
 import { Device } from "../entity/device.entity";
 import { TimeOrder } from "../entity/time-order.entity";
 import { Session } from '../entity/session.entity';
-import { Receipt } from "../entity/reciept.entity";
+import { Receipt } from "../entity/receipt.entity";
 import { AuthRequest } from "../middleware/auth.middleware";
 
 const sessionRepo = myDataSource.getRepository(Session)

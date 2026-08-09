@@ -1,5 +1,5 @@
 import { Response, Request } from "express";
-import { Receipt } from "../entity/reciept.entity";
+import { Receipt } from "../entity/receipt.entity";
 import { Product } from "../entity/product.entity";
 import { myDataSource } from "../app-data-source";
 import { Order } from "../entity/order.entity";
