@@ -48,14 +48,23 @@ app.use('/finances', financeRouter)
 app.use('/cash', cashRouter)
 app.use('/products', productsRouter )
 
-// Server Running
-myDataSource
-.initialize() 
-.then(()=>{
-    app.listen(5000, () => {
-        console.log(`Server running at http://localhost:5000`);
+// Keep for local dev — harmless no-op-ish on Vercel, but guard it so it
+// doesn't fire a duplicate/conflicting initialize() call there
+if (!process.env.VERCEL) {
+  const PORT = parseInt(process.env.PORT || "5000", 10);
+  myDataSource.initialize()
+    .then(() => {
+      console.log("Data source initialized");
+      app.listen(PORT, () => {
+        console.log(`Server listening on http://localhost:${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error("Error during data source initialization:", err);
+      app.listen(PORT, () => {
+        console.log(`Server listening on http://localhost:${PORT} (DB not connected)`);
+      });
     });
-    console.log("Data Source Has Been Initialized!")
-}).catch((err)=>{
-    console.error("Error during Data Source initialization:", err)
-})
+}
+
+export default app;
