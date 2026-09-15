@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import express from 'express';
 import { myDataSource } from './app-data-source';
 import cors from 'cors';
@@ -15,6 +16,9 @@ import configsRouter from './routes/main-configs.router';
 import receiptsRouter from './routes/receipts.router';
 import authRouter from './routes/auth.router';
 import cashRouter from './routes/cash.router';
+import * as dotenv from "dotenv";
+
+dotenv.config()
 
 // Initializing App
 const app = express()
