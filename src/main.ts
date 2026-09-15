@@ -17,6 +17,7 @@ import receiptsRouter from './routes/receipts.router';
 import authRouter from './routes/auth.router';
 import cashRouter from './routes/cash.router';
 import * as dotenv from "dotenv";
+import 'pg'
 
 dotenv.config()
 
