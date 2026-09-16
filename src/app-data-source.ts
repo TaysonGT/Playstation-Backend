@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import { DataSource } from "typeorm";
 import { CashCollection } from "./entity/cash-collection.entity";
 import { DeductionType } from "./entity/deduction-type.entity";
