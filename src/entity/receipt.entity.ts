@@ -8,32 +8,32 @@ import { Deduction } from "./deduction.entity";
 @Entity('receipts')
 export class Receipt{
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column()
-    type: 'session'|'outer';
+    type!: 'session'|'outer';
 
     @Column({nullable: true})
     description?: string;
 
     @Column()
-    total: number;
+    total!: number;
     
     @OneToMany(()=>Order, (order)=>order.receipt)
-    orders: Order[];
+    orders!: Order[];
 
     @ManyToOne(()=>Device, (device)=>device.receipts)
     device?: Device
 
     @OneToMany(()=>TimeOrder, (order)=>order.receipt)
-    time_orders: TimeOrder[];
+    time_orders!: TimeOrder[];
 
     @OneToOne(()=>Deduction, (deduction)=>deduction.receipt)
-    deduction: Deduction;
+    deduction!: Deduction;
     
     @ManyToOne(()=>User, (user)=>user.receipts)
-    cashier: User;
+    cashier!: User;
     
     @CreateDateColumn()
-    created_at: Date
+    created_at!: Date
 }

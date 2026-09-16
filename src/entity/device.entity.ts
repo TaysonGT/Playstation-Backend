@@ -7,22 +7,22 @@ import { TimeOrder } from "./time-order.entity";
 @Entity('devices')
 export class Device{
     @PrimaryGeneratedColumn('uuid')
-    id:string;
+    id!:string;
 
     @Column()
-    name: string;
+    name!: string;
 
     @Column({default: false})
-    status: boolean;
+    status!: boolean;
     
     @OneToMany(()=>TimeOrder, (timeOrders)=>timeOrders.device)
-    timeOrders: TimeOrder[];
+    timeOrders!: TimeOrder[];
 
     @ManyToOne(()=>DeviceType, (deviceType)=>deviceType.devices)
-    type: DeviceType;
+    type!: DeviceType;
 
     @OneToMany(()=>Receipt, (receipt)=>receipt.device)
-    receipts: Receipt[];
+    receipts!: Receipt[];
 
     @OneToOne(()=>Session, (session)=> session.device)
     session?: Session;

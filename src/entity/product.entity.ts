@@ -4,20 +4,20 @@ import { Order } from "./order.entity";
 @Entity('products')
 export class Product{
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column()
-    name: string;
+    name!: string;
 
     @Column()
-    price: number
+    price!: number
 
     @Column()
-    stock: number
+    stock!: number
 
     @OneToMany(()=>Order, (order)=>order.product)
-    orders: Order[];
+    orders!: Order[];
 
     @DeleteDateColumn()
-    deletedAt: Date;
+    deletedAt!: Date;
 }

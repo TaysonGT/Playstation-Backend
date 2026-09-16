@@ -6,26 +6,26 @@ import { DeductionType } from "./deduction-type.entity";
 @Entity('users')
 export class User {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column()
-    username: string;
+    username!: string;
 
     @Column()
-    password: string;
+    password!: string;
 
     @Column({default: false})
-    role: 'admin'|'employee';
+    role!: 'admin'|'employee';
 
     @OneToMany(()=>Receipt, (receipt)=> receipt.cashier)
-    receipts: Receipt[];
+    receipts!: Receipt[];
 
     @OneToMany(()=>DeductionType, (deductionTypes)=> deductionTypes.created_by)
-    createdDeductionTypes: DeductionType[];
+    createdDeductionTypes!: DeductionType[];
 
     @OneToMany(()=>CashCollection, (cashCollection)=> cashCollection.collected_by)
-    cashCollections: CashCollection[];
+    cashCollections!: CashCollection[];
     
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
 }

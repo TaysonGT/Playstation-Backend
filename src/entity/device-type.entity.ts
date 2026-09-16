@@ -4,17 +4,17 @@ import { Device } from "./device.entity";
 @Entity('device_type')
 export class DeviceType{
     @PrimaryGeneratedColumn('uuid')
-    id:string;
+    id!:string;
 
     @Column()
-    name: string;
+    name!: string;
 
     @Column()
-    single_price: number;
+    single_price!: number;
 
     @Column()
-    multi_price: number;
+    multi_price!: number;
 
     @OneToMany(()=>Device, (device)=>device.type)
-    devices: Device[];
+    devices!: Device[];
 } 

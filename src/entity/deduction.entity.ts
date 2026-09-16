@@ -5,11 +5,11 @@ import { DeductionType } from "./deduction-type.entity";
 @Entity('deductions')
 export class Deduction{
     @PrimaryGeneratedColumn('uuid')
-    id:string;
+    id!:string;
 
     @ManyToOne(()=>DeductionType, (type)=>type.deductions)
-    deductionType: DeductionType;
+    deductionType!: DeductionType;
     
     @OneToOne(()=>Receipt, (receipt)=>receipt.deduction)
-    receipt: Receipt;
+    receipt!: Receipt;
 } 

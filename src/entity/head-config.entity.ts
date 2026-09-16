@@ -3,11 +3,11 @@ import { Entity, Column, PrimaryGeneratedColumn } from "typeorm";
 @Entity('head_config')
 export class HeadConfig {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column()
-    key: string;
+    key!: string;
 
     @Column()
-    value: string
+    value!: string
 } 

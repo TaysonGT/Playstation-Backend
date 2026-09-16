@@ -6,33 +6,33 @@ import { TimeOrder } from "./time-order.entity";
 @Entity('sessions')
 export class Session {
     @PrimaryGeneratedColumn("uuid")
-    id: string;
+    id!: string;
 
     @Column({nullable: true})
     device_id?: string;
 
-    @Column({nullable:true})
-    ended_at: string;
+    @Column({nullable: true})
+    ended_at!: string;
 
     @Column('text')
-    time_type: string;
+    time_type!: string;
     
     @Column('text')
-    play_type: string;
+    play_type!: string;
 
     @Column({default: 'running'})
-    status: 'ended'|'running';
+    status!: 'ended'|'running';
 
     @CreateDateColumn()
-    started_at: Date;
+    started_at!: Date;
 
     @OneToOne(()=> Device, (device)=> device.session)
     @JoinColumn({name: 'device_id'})
     device?: Device;
 
     @OneToMany(()=>Order, order => order.session)
-    orders: Order[];
+    orders!: Order[];
 
     @OneToMany(()=>TimeOrder, order => order.session)
-    time_orders: TimeOrder[];
+    time_orders!: TimeOrder[];
 } 

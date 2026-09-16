@@ -6,23 +6,23 @@ import { Receipt } from "./receipt.entity";
 @Entity('orders')
 export class Order {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column()
-    quantity: number;
+    quantity!: number;
     
     @Column()
-    cost:number
+    cost!:number
     
     @ManyToOne(()=>Product, (product)=>product.orders)
-    product: Product;
+    product!: Product;
     
     @ManyToOne(()=>Session, (session)=>session.orders)
     session?: Session;
 
     @ManyToOne(()=>Receipt, (receipt)=>receipt.orders)
-    receipt: Receipt;
+    receipt!: Receipt;
 
     @CreateDateColumn()
-    ordered_at: string;
+    ordered_at!: string;
 }

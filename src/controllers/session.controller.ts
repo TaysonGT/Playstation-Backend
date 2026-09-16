@@ -94,7 +94,7 @@ const changeDevice = async (req: Request, res: Response) => {
   
     
     res.json({ message: "تم نقل الحساب لجهاز اخر", success: true })
-  }catch(error){
+  }catch(error: any){
     res.json({ message: error.message, success: false })
   }
 }

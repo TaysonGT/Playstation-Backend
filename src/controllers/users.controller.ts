@@ -186,7 +186,7 @@ const currentSession = async (req: Request, res: Response) => {
 
     res.json({ success: true, user: safeUser });
 
-  } catch(error){
+  } catch(error: any){
     res.json({message: error.message, success: false})
   }
 }

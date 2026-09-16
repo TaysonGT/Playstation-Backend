@@ -6,26 +6,26 @@ import { Device } from "./device.entity";
 @Entity('time_orders')
 export class TimeOrder {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @ManyToOne(()=>Session, (session)=>session.time_orders)
-    session: Session;
+    session!: Session;
     
     @ManyToOne(()=>Device, (device)=>device.timeOrders)
     device?: Device|null;
 
     @ManyToOne(()=>Receipt, (receipt)=>receipt.time_orders)
-    receipt: Receipt;
+    receipt!: Receipt;
 
     @Column()
-    play_type:string;
+    play_type!:string;
 
     @Column()
-    cost: number
+    cost!: number
 
     @Column()
-    started_at: Date;
+    started_at!: Date;
 
     @CreateDateColumn()
-    ended_at: Date;
+    ended_at!: Date;
 }
