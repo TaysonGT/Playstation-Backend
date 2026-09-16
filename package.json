@@ -2,10 +2,10 @@
   "name": "ps-server",
   "version": "1.0.0",
   "description": "",
-  "main": "./dist/src/main.js",
+  "main": "./dist/src/app.js",
   "scripts": {
-    "dev": "nodemon src/main.ts",
-    "start": "node dist/src/main.js",
+    "dev": "nodemon src/app.ts",
+    "start": "node dist/src/app.js",
     "build": "npx tsc"
   },
   "author": "",
