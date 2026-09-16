@@ -1,4 +1,4 @@
 export class AddDeviceGame {
-    device_id: string;
-    game_id: string;
+    device_id!: string;
+    game_id!: string;
 }

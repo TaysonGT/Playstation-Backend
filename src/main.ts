@@ -39,6 +39,24 @@ app.use(express.urlencoded({
     extended: true
 }))
 
+// Ensure DB is initialized before any route runs
+let dbInitPromise: Promise<typeof myDataSource> | null = null;
+
+app.use(async (_req, res, next) => {
+  try {
+    if (!myDataSource.isInitialized) {
+      if (!dbInitPromise) {
+        dbInitPromise = myDataSource.initialize();
+      }
+      await dbInitPromise;
+    }
+    next();
+  } catch (err) {
+    console.error("DB initialization failed:", err);
+    res.status(503).json({ error: "Database unavailable" });
+  }
+});
+
 // Routes
 app.use('/auth', authRouter)
 app.use('/configs', configsRouter )
